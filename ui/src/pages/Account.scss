@@ -9,5 +9,15 @@
     button {
       margin-right: 15px;
     }
+
+    @media screen and (max-width: 450px) {
+      flex-direction: column;
+
+      > * {
+        margin-top: 15px;
+        max-width: 150px;
+      }
+    }
+  
   }
 }

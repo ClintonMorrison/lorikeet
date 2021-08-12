@@ -187,37 +187,31 @@ export default class Account extends React.Component {
             You can download your passwords as a text file, a CSV, or JSON.
           </p>
 
-          <div className="row download-actions">
-            <div className="col s12">
-              <button
-                className="btn waves-effect waves-light"
-                type="submit"
-                name="action"
-                onClick={(e) => this.submitDownload(e, 'csv')}>
-                <i className="material-icons left">file_download</i>
-                CSV
-              </button>
-              <button
-                className="btn waves-effect waves-light"
-                type="submit"
-                name="action"
-                onClick={(e) => this.submitDownload(e, 'text')}>
-                <i className="material-icons left">file_download</i>
-                Text
-              </button>
-              <button
-                className="btn waves-effect waves-light"
-                type="submit"
-                name="action"
-                onClick={(e) => this.submitDownload(e, 'json')}>
-                <i className="material-icons left">file_download</i>
-                JSON
-              </button>
-            </div>
-            <div className="col s4">
-            </div>
-            <div className="col s4">
-            </div>
+          <div className="download-actions">
+            <button
+              className="btn waves-effect waves-light"
+              type="submit"
+              name="action"
+              onClick={(e) => this.submitDownload(e, 'csv')}>
+              <i className="material-icons left">file_download</i>
+              CSV
+            </button>
+            <button
+              className="btn waves-effect waves-light"
+              type="submit"
+              name="action"
+              onClick={(e) => this.submitDownload(e, 'text')}>
+              <i className="material-icons left">file_download</i>
+              Text
+            </button>
+            <button
+              className="btn waves-effect waves-light"
+              type="submit"
+              name="action"
+              onClick={(e) => this.submitDownload(e, 'json')}>
+              <i className="material-icons left">file_download</i>
+              JSON
+            </button>
           </div>
         </form>
       </div>
