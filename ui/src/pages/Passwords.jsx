@@ -181,7 +181,7 @@ export default class Passwords extends React.Component {
 
       return (
         <EmptyState
-          img="/emptyState.jpeg"
+          img="/emptyState.png"
           title="Nothing here but us birds!"
           subtitle="Add your first password and it will show up here." />
       );
