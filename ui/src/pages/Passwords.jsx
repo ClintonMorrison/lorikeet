@@ -17,7 +17,7 @@ export default class Passwords extends React.Component {
     super(props);
     this.state = {
       query: '',
-      sort: localStorage.getItem('sort') || 'last_use',
+      sort: localStorage.getItem('sort') || 'last_used',
       document: null
     };
   }
