@@ -21,6 +21,7 @@ go build -o server cmd/server/main.go
 For frontend development:
 ```
 cd ./lorikeet/ui
+npm i
 npm run start
 ```
 
@@ -82,6 +83,22 @@ http {
       try_files $uri /index.html =400;
     }
   }
+
+
+  # Or for local development:
+  server {
+    server_name  lorikeet.dev.ca;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    location ~ ^/api/ {
+            proxy_pass http://0.0.0.0:8080;
+    }
+
+    location ~ / {
+            proxy_pass http://0.0.0.0:3000;
+    }
+  }
+
 }
 ```
 
