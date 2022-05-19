@@ -11,6 +11,16 @@ export default class ChangeLog extends React.Component {
 
         <h1>Change Log</h1>
 
+        <h2>Friday, May 18, 2022</h2>
+        <p>
+          <ul className="browser-default">
+            <li>fixed bug with default sort order not being applied</li>
+            <li>improved how server handles sessions</li>
+          </ul>
+        </p>
+
+
+
         <h2>Monday, November 9, 2020</h2>
         <p>
           <ul className="browser-default">
