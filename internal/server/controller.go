@@ -126,14 +126,14 @@ func (c *Controller) parseRequest(w http.ResponseWriter, r *http.Request) (*Auth
 	// Read auth headers
 	auth, err := AuthFromRequest(r)
 	if err != nil {
-		c.writeResponse(r, w, invalidRequestResponse)
+		c.writeResponse(r, w, invalidRequestResponse, &auth)
 		return nil, nil
 	}
 
 	// Read body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		c.writeResponse(r, w, invalidRequestResponse)
+		c.writeResponse(r, w, invalidRequestResponse, &auth)
 		return nil, nil
 	}
 
@@ -162,25 +162,30 @@ func (c *Controller) handleDocument(w http.ResponseWriter, r *http.Request) {
 		response = invalidRequestResponse
 	}
 
-	c.writeResponse(r, w, response)
+	c.writeResponse(r, w, response, auth)
 }
 
-func (c *Controller) logRequest(r *http.Request, response DocumentResponse) {
+func (c *Controller) logRequest(r *http.Request, response DocumentResponse, auth *Auth) {
 	ip := r.Header.Get("X-Forwarded-For")
 	result := "OK"
 	if response.Error != "" {
 		result = response.Error
 	}
 
+	name := ""
+	if (auth != nil) {
+		name = auth.username
+	}
+
 	c.requestLogger.Printf(
-		"%s %s | %d [%s] | %s\n",
+		"%s %s | %d [%s] | %s | %s\n",
 		r.Method, r.RequestURI,
-		response.Code, result,
+		response.Code, result, name,
 		ip)
 }
 
-func (c *Controller) writeResponse(r *http.Request, w http.ResponseWriter, response DocumentResponse) {
-	c.logRequest(r, response)
+func (c *Controller) writeResponse(r *http.Request, w http.ResponseWriter, response DocumentResponse, auth *Auth) {
+	c.logRequest(r, response, auth)
 	w.WriteHeader(response.Code)
 
 	jsonResponse, err := json.Marshal(response)

@@ -1,22 +1,21 @@
 package server
 
 import (
-	"net/http"
 	"errors"
+	"net/http"
 	"strings"
 )
 
 type Auth struct {
 	username string
 	password string
-	ip string
+	ip       string
 }
 
 func (a Auth) SaltedPassword(salt []byte) (string, error) {
 	data := make([]byte, 0)
 	data = append(data, []byte(a.password)...)
 	data = append(data, salt...)
-
 
 	return hash(data), nil
 }
@@ -37,6 +36,7 @@ func (a Auth) Signature(salt []byte) (string, error) {
 
 func AuthFromRequest(r *http.Request) (Auth, error) {
 	username, password, ok := r.BasicAuth()
+
 	username = strings.ToLower(username)
 	ip := r.Header.Get("X-Forwarded-For")
 
