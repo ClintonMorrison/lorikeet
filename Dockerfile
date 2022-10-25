@@ -15,6 +15,7 @@ COPY ./internal /opt/go/src/github.com/ClintonMorrison/lorikeet/internal
 COPY ./start.sh /opt/go/src/github.com/ClintonMorrison/lorikeet/start.sh
 
 WORKDIR /opt/go/src/github.com/ClintonMorrison/lorikeet
+RUN go mod init
 RUN go build -o server cmd/server/main.go
 RUN go build -o doBackup cmd/backup/main.go
 RUN go build -o doRestore cmd/restore/main.go
