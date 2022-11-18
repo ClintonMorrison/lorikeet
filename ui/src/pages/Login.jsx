@@ -3,6 +3,7 @@ import _ from 'lodash';
 import { Helmet } from "react-helmet";
 
 import TextField from '../components/forms/TextField';
+import ReCaptcha from '../components/ReCaptcha';
 
 export default class Login extends React.Component {
   constructor(props) {
@@ -11,7 +12,9 @@ export default class Login extends React.Component {
       username: "",
       password: "",
       usernameError: "",
-      passwordError: ""
+      passwordError: "",
+      recaptchaResult: "",
+      resetRecaptcha: false,
     };
   }
 
@@ -30,6 +33,10 @@ export default class Login extends React.Component {
       isOkay = false;
     }
 
+    if (!this.state.recaptchaResult) {
+      isOkay = false;
+    }
+
     if (!isOkay) {
       return;
     }
@@ -38,9 +45,11 @@ export default class Login extends React.Component {
     this.props.services.authService.setCredentials({ username, password });
     this.props.services.documentService.loadDocument()
       .then(() => {
+        this.resetRecaptcha();
         this.props.history.push('/passwords');
       })
       .catch(err => {
+        this.resetRecaptcha();
         console.log(err);
         const errorMessage = _.get(err, 'response.data.error', 'An error occurred.');
         if (errorMessage) {
@@ -64,6 +73,15 @@ export default class Login extends React.Component {
   updatePassword(password) {
     this.clearErrors();
     this.setState({ password });
+  }
+
+  updateRecaptchaResult(recaptchaResult) {
+    this.clearErrors();
+    this.setState({ recaptchaResult, resetRecaptcha: false });
+  }
+
+  resetRecaptcha() {
+    this.setState({ recaptchaResult: '', resetRecaptcha: true });
   }
 
   render() {
@@ -100,10 +118,15 @@ export default class Login extends React.Component {
               error={this.state.passwordError}
               onChange={e => this.updatePassword(e)} />
 
+            <ReCaptcha
+              onChange={result => this.updateRecaptchaResult(result)}
+              reset={this.state.resetRecaptcha} />
+
             <div className="row">
               <div className="input-field col s12">
                 <button
                   className="btn waves-effect waves-light"
+                  disabled={!this.state.recaptchaResult}
                   type="submit"
                   name="action"
                   onClick={(e) => this.submit(e)}>
