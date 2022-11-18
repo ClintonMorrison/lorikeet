@@ -55,6 +55,7 @@ export default class Login extends React.Component {
         if (errorMessage) {
           this.setState({ usernameError: errorMessage, passwordError: ' ' });
         }
+        this.props.services.authService.logout();
       });
   }
 

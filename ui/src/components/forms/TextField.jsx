@@ -15,7 +15,7 @@ export default class TextField extends React.Component {
     }, 0);
   }
 
-  render () {
+  render() {
     const {
       id,
       label,
@@ -37,9 +37,9 @@ export default class TextField extends React.Component {
           autoComplete={this.props.autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          ref={this.ref}/>
+          ref={this.ref} />
         <label htmlFor={id}>{label}</label>
-        <span className="helper-text" data-error={error}/>
+        <span className="helper-text" data-error={error} />
       </div>
     );
   }

@@ -78,6 +78,7 @@ export default class Details extends React.Component {
             id="username"
             value={item.username}
             error={this.state.errors.username}
+            autoComplete="off"
             onChange={val => this.updateItem('username', val)} />
 
           <TextField
@@ -86,9 +87,10 @@ export default class Details extends React.Component {
             type="text"
             value={item.email}
             error={this.state.errors.email}
+            autoComplete="off"
             onChange={val => this.updateItem('email', val)} />
 
-          <PasswordField 
+          <PasswordField
             value={item.password}
             updateItem={this.updateItem} />
 

@@ -7,6 +7,7 @@ import TextField from '../components/forms/TextField';
 import './Register.scss';
 import { validatePassword } from "../utils/validation";
 import PasswordRequirements from "../components/PasswordRequirements";
+import ReCaptcha from '../components/ReCaptcha';
 
 export default class Register extends React.Component {
   constructor(props) {
@@ -16,6 +17,8 @@ export default class Register extends React.Component {
       password: "",
       usernameError: "",
       passwordError: "",
+      recaptchaResult: "",
+      resetRecaptcha: false,
       passwordValidation: {
         valid: true,
         containsLower: true,
@@ -49,6 +52,10 @@ export default class Register extends React.Component {
       isOkay = false;
     }
 
+    if (!this.state.recaptchaResult) {
+      isOkay = false;
+    }
+
     if (!isOkay) {
       return;
     }
@@ -60,11 +67,13 @@ export default class Register extends React.Component {
       })
       .catch(err => {
         console.log({ ...err });
+        this.resetRecaptcha();
         const errorMessage = _.get(err, 'response.data.error', 'An error occurred.');
         if (errorMessage) {
           this.setState({ usernameError: errorMessage });
         }
-    });
+        this.props.services.authService.logout();
+      });
   }
 
   clearErrors() {
@@ -84,6 +93,16 @@ export default class Register extends React.Component {
     const passwordValidation = validatePassword(password);
     this.setState({ password, passwordValidation });
   }
+
+  updateRecaptchaResult(recaptchaResult) {
+    this.clearErrors();
+    this.setState({ recaptchaResult, resetRecaptcha: false });
+  }
+
+  resetRecaptcha() {
+    this.setState({ recaptchaResult: '', resetRecaptcha: true });
+  }
+
 
   render() {
     return (
@@ -109,7 +128,7 @@ export default class Register extends React.Component {
                   Because of how your data will be encrypted, it will not be possible to regain
                   control of your account if you forget.
                 </p>
-                <PasswordRequirements result={this.state.passwordValidation}/>
+                <PasswordRequirements result={this.state.passwordValidation} />
               </div>
             </div>
 
@@ -128,12 +147,17 @@ export default class Register extends React.Component {
               error={this.state.passwordError}
               onChange={val => this.updatePassword(val)} />
 
+            <ReCaptcha
+              onChange={result => this.updateRecaptchaResult(result)}
+              reset={this.state.resetRecaptcha} />
+
             <div className="row">
               <div className="input-field col s12">
                 <button
                   className="btn waves-effect waves-light"
                   type="submit"
                   name="action"
+                  disabled={!this.state.recaptchaResult}
                   onClick={(e) => this.submit(e)}>
                   Register
                 </button>

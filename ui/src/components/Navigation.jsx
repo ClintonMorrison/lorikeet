@@ -61,7 +61,7 @@ export class Navigation extends React.Component {
           {items}
         </ul>
       </div>
-  );
+    );
 
 
     return (

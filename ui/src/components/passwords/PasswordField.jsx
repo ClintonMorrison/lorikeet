@@ -44,9 +44,9 @@ export default class PasswordField extends React.Component {
       <button
         className="waves-effect waves-light btn"
         onClick={e => this.toggleShow(e)}>
-        <i className="material-icons left">{this.state.show ? 'visibility_off' : 'visibility' }</i>
+        <i className="material-icons left">{this.state.show ? 'visibility_off' : 'visibility'}</i>
         {this.state.show ? 'Hide' : 'Show'}
-        </button>
+      </button>
     );
   }
 

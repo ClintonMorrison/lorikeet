@@ -1,5 +1,5 @@
 import sha256 from 'crypto-js/sha256';
-import AES  from 'crypto-js/aes';
+import AES from 'crypto-js/aes';
 import UTF_8 from 'crypto-js/enc-utf8';
 
 const SALT_1 = 'CC352C99A14616AD22678563ECDA5';
