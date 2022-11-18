@@ -9,6 +9,7 @@ import (
 )
 
 const documentApiPath = "/api/document"
+const sessionApiPath = "/api/session"
 
 func Run(
 	dataPath string,
@@ -33,17 +34,21 @@ func Run(
 
 	repository := &Repository{dataPath}
 	lockoutTable := NewLockoutTable()
-	service := &Service{
+	service := &DocumentService{
 		repo:         repository,
 		lockoutTable: lockoutTable,
 		errorLogger:  errorLogger,
 		lockByUser:   make(map[string]*sync.RWMutex),
 	}
-	controller := Controller{service, requestLogger}
 
 	repository.createDataDirectory()
 
-	http.HandleFunc(documentApiPath, controller.handleDocument)
+	documentController := DocumentController{service, requestLogger}
+	http.HandleFunc(documentApiPath, documentController.handle)
+
+	sessionController := SessionController{service, requestLogger}
+	http.HandleFunc(sessionApiPath, sessionController.handle)
+
 	fmt.Printf("Listening on http://localhost%s\n", address)
 	err = http.ListenAndServe(address, nil)
 	if err != nil {
