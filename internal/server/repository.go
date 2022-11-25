@@ -1,12 +1,12 @@
 package server
 
 import (
-	"os"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 )
-
 
 type Repository struct {
 	dataPath string
@@ -20,7 +20,7 @@ func (r *Repository) createDataDirectory() {
 	}
 }
 
-func (r *Repository)  pathForDocument(auth Auth, salt []byte) (string, error) {
+func (r *Repository) pathForDocument(auth Auth, salt []byte) (string, error) {
 	signature, err := auth.Signature(salt)
 	if err != nil {
 		return "", err
@@ -29,19 +29,19 @@ func (r *Repository)  pathForDocument(auth Auth, salt []byte) (string, error) {
 	return fmt.Sprintf("%s/%s.txt", r.dataPath, signature), nil
 }
 
-func (r *Repository)  pathForSalt(auth Auth) string {
+func (r *Repository) pathForSalt(auth Auth) string {
 	return fmt.Sprintf("%s/%s.salt.txt", r.dataPath, auth.username)
 }
 
 //
 // Salt Files
 //
-func (r *Repository)  saltFileExists(auth Auth) (bool, error) {
+func (r *Repository) saltFileExists(auth Auth) (bool, error) {
 	filename := r.pathForSalt(auth)
 	return storage.FileExists(filename)
 }
 
-func (r *Repository)  writeSaltFile(auth Auth) ([]byte, error) {
+func (r *Repository) writeSaltFile(auth Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 
 	salt, err := makeSalt()
@@ -57,7 +57,7 @@ func (r *Repository)  writeSaltFile(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *Repository)  readSaltFile(auth Auth) ([]byte, error) {
+func (r *Repository) readSaltFile(auth Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 	salt, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -67,7 +67,7 @@ func (r *Repository)  readSaltFile(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *Repository)  deleteSaltFile(auth Auth) (error) {
+func (r *Repository) deleteSaltFile(auth Auth) error {
 	fileName := r.pathForSalt(auth)
 
 	err := os.Remove(fileName)
@@ -81,7 +81,7 @@ func (r *Repository)  deleteSaltFile(auth Auth) (error) {
 //
 // Document Files
 //
-func (r *Repository)  documentExists(auth Auth, salt []byte) (bool, error) {
+func (r *Repository) documentExists(auth Auth, salt []byte) (bool, error) {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return false, err
@@ -90,7 +90,7 @@ func (r *Repository)  documentExists(auth Auth, salt []byte) (bool, error) {
 	return storage.FileExists(filename)
 }
 
-func (r *Repository)  writeDocument(data []byte, auth Auth, salt []byte) error {
+func (r *Repository) writeDocument(data []byte, auth Auth, salt []byte) error {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (r *Repository)  writeDocument(data []byte, auth Auth, salt []byte) error {
 	return nil
 }
 
-func (r *Repository)  readDocument(auth Auth, salt []byte) ([]byte, error) {
+func (r *Repository) readDocument(auth Auth, salt []byte) ([]byte, error) {
 	data := make([]byte, 0)
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
@@ -138,7 +138,7 @@ func (r *Repository)  readDocument(auth Auth, salt []byte) ([]byte, error) {
 	return decrypted, nil
 }
 
-func (r *Repository)  deleteDocument(auth Auth, salt []byte) (error) {
+func (r *Repository) deleteDocument(auth Auth, salt []byte) error {
 	fileName, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (r *Repository)  deleteDocument(auth Auth, salt []byte) (error) {
 	return nil
 }
 
-func (r *Repository)  moveDocument(currentAuth Auth, salt []byte, newAuth Auth) error {
+func (r *Repository) moveDocument(currentAuth Auth, salt []byte, newAuth Auth) error {
 	currentFilename, err := r.pathForDocument(currentAuth, salt)
 	if err != nil {
 		return err

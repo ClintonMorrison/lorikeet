@@ -6,7 +6,7 @@ import TextField from '../components/forms/TextField';
 import PasswordRequirements from '../components/PasswordRequirements';
 
 import './Account.scss';
-import {validatePassword} from "../utils/validation";
+import { validatePassword } from "../utils/validation";
 
 export default class Account extends React.Component {
   constructor(props) {
@@ -65,7 +65,7 @@ export default class Account extends React.Component {
     }
 
     this.props.services.documentService.updatePassword(this.state.newPassword).then(() => {
-      this.props.history.push('/passwords');
+      setTimeout(() => this.props.history.push('/passwords'), 100);
     }).catch(err => {
       const newPasswordError = _.get(err, 'response.data.error', 'An error occurred.');
       this.setState({ newPasswordError });
@@ -142,7 +142,7 @@ export default class Account extends React.Component {
             control of your account if you forget.
           </p>
 
-          <PasswordRequirements result={this.state.passwordValidation}/>
+          <PasswordRequirements result={this.state.passwordValidation} />
 
           <div className="row">
             <TextField

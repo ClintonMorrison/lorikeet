@@ -17,15 +17,17 @@ export default class AuthService {
     return this.apiService.post("document", {
       document: encryptedDocument,
       password: this.authService.doubleHash(password)
-    }, this.authService.getHeaders());
+    }, this.authService.getRegisterHeaders());
   }
 
   loadDocument() {
-    return this.apiService.get("document", {}, this.authService.getHeaders()).then(resp => {
+    return this.apiService.get("document", {}, this.authService.getAuthedHeaders()).then(resp => {
       const encryptedDocument = _.get(resp, "data.document") || '{}';
       const decryptedDocument = this.authService.decryptWithToken(encryptedDocument);
       this.document = JSON.parse(decryptedDocument);
       return this.document;
+    }).catch(e => {
+      this.apiService.handleAuthError(e);
     });
   }
 
@@ -39,11 +41,14 @@ export default class AuthService {
     return this.apiService.put("document", {
       document: encryptedDocument,
       password: password ? this.authService.doubleHash(password) : undefined
-    }, this.authService.getHeaders());
+    }, this.authService.getAuthedHeaders());
   }
 
   deleteDocument() {
-    return this.apiService.del("document", this.authService.getHeaders());
+    return this.apiService.del("document", this.authService.getAuthedHeaders())
+      .catch(e => {
+        this.apiService.handleAuthError(e);
+      });
   }
 
   createPassword(id) {
@@ -64,7 +69,15 @@ export default class AuthService {
   updatePassword(password) {
     return this.loadDocument().then(document => {
       return this.updateDocument({ document, password });
-    }).then(() => this.authService.setPassword(password));
+    }).then((resp) => {
+      console.log('GOT RESPONSE', resp.data);
+      console.log('11 calling function with: ', { sessionToken: resp?.data?.sessionToken });
+      this.authService.setSession({ sessionToken: resp?.data?.sessionToken });
+      this.authService.setPassword(password)
+    }).catch(e => {
+      this.apiService.handleAuthError(e);
+    });
+    ;
   }
 
   downloadDocument(type) {

@@ -25,7 +25,8 @@ export default class Register extends React.Component {
         containsUpper: true,
         containsDigit: true,
         containsSpecial: true
-      }
+      },
+      darkMode: props.services.preferencesService.isDarkModeEnabled(),
     };
   }
 
@@ -62,7 +63,9 @@ export default class Register extends React.Component {
 
     const { username, password } = this.state;
     this.props.services.documentService.createDocument({ username, password })
-      .then(() => {
+      .then((resp) => {
+        const sessionToken = _.get('data.sessionToken', resp);
+        this.props.services.authService.setSession({ sessionToken });
         this.props.history.push('/passwords')
       })
       .catch(err => {
@@ -149,7 +152,8 @@ export default class Register extends React.Component {
 
             <ReCaptcha
               onChange={result => this.updateRecaptchaResult(result)}
-              reset={this.state.resetRecaptcha} />
+              reset={this.state.resetRecaptcha}
+              darkMode={this.state.darkMode} />
 
             <div className="row">
               <div className="input-field col s12">

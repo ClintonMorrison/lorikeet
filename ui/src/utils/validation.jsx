@@ -10,11 +10,12 @@ const specialChars = [
 
 
 export function validatePassword(password) {
+  const skipValidation = window.location.host === 'dev.lorikeet.ca'; // skip validation for local dev
   const containsLower = _.some(password, c => c.toLowerCase() === c);
   const containsUpper = _.some(password, c => c.toUpperCase() === c);
   const containsDigit = _.some(password, c => digitsChars.includes(c));
   const containsSpecial = _.some(password, c => specialChars.includes(c));
-  const valid = containsLower && containsUpper && containsDigit && containsSpecial;
+  const valid = skipValidation || (containsLower && containsUpper && containsDigit && containsSpecial);
 
   return {
     valid,

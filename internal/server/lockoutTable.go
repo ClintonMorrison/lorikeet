@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-const errorWindow = time.Hour * 5
-const maxErrorsInWindow = 5
+const errorWindow = time.Hour * 6
+const maxErrorsInWindow = 4
 
 type LockoutTable struct {
 	errorTimesByIP   map[string][]time.Time

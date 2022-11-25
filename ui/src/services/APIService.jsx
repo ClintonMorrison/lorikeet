@@ -9,6 +9,14 @@ export default class APIService {
     axios.defaults.headers.common['Accept'] = 'application/json';
   }
 
+  handleAuthError(error) {
+    if (error.response.status === 401) {
+      this.authService.logout();
+      setTimeout(() => window.location.assign('/login'), 500);
+    }
+    return error;
+  }
+
   get(path, params, headers) {
     return axios({
       method: 'get',

@@ -6,8 +6,7 @@ const SALT_1 = 'CC352C99A14616AD22678563ECDA5';
 const SALT_2 = '7767B9225CF66B418DD2A39CBC4AA';
 
 export default class AuthService {
-  constructor({ apiService }) {
-    this.apiService = apiService;
+  constructor() {
     this.document = null;
   }
 
@@ -34,12 +33,21 @@ export default class AuthService {
     this.setPassword(password);
   }
 
+  setSession({ sessionToken }) {
+    console.log('setting session token', sessionToken);
+    sessionStorage.setItem('sessionToken', sessionToken);
+  }
+
+  getSessionToken() {
+    return sessionStorage.getItem('sessionToken');
+  }
+
   setPassword(password) {
     sessionStorage.setItem('token', this.firstHash(password));
   }
 
   sessionExists() {
-    return !!(this.getUsername() && this.getToken());
+    return !!(this.getUsername() && this.getToken() && this.getSessionToken());
   }
 
   getUsername() {
@@ -73,10 +81,17 @@ export default class AuthService {
     return AES.decrypt(text, token).toString(UTF_8);
   }
 
-  getHeaders() {
+  getAuthedHeaders() {
     const username = this.getUsername();
-    const token = this.getHashedToken();
-    const encoded = btoa(`${username}:${token}`);
+    const sessionToken = this.getSessionToken();
+    const encoded = btoa(`${username}:${sessionToken}`);
+    return { 'Authorization': `Basic ${encoded}` };
+  }
+
+  getRegisterHeaders() {
+    const username = this.getUsername();
+    const decryptToken = this.getHashedToken();
+    const encoded = btoa(`${username}:${decryptToken}`);
     return { 'Authorization': `Basic ${encoded}` };
   }
 }

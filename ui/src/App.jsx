@@ -6,32 +6,39 @@ import Routes from './Routes';
 import AuthService from "./services/AuthService";
 import APIService from "./services/APIService";
 import DocumentService from "./services/DocumentService";
+import SessionService from "./services/SessionService";
 
 import './App.scss';
 import PreferencesService from './services/PreferencesService';
 
 // Instantiate services
+const authService = new AuthService();
+
 const apiService = new APIService({
+  authService,
   baseURL: `${window.location.origin}/api/`
 });
 
-const authService = new AuthService({
-  apiService
-});
 
 const documentService = new DocumentService({
   authService,
   apiService
 });
 
+const sessionService = new SessionService({
+  apiService,
+  authService
+})
+
 const preferencesService = new PreferencesService({
-  onDarkModeChanged: () => {}
+  onDarkModeChanged: () => { }
 });
 
 const services = {
   apiService,
   authService,
   documentService,
+  sessionService,
   preferencesService
 };
 

@@ -15,6 +15,7 @@ export default class Login extends React.Component {
       passwordError: "",
       recaptchaResult: "",
       resetRecaptcha: false,
+      darkMode: props.services.preferencesService.isDarkModeEnabled(),
     };
   }
 
@@ -41,11 +42,16 @@ export default class Login extends React.Component {
       return;
     }
 
-    const { username, password } = this.state;
+    const { username, password, recaptchaResult } = this.state;
     this.props.services.authService.setCredentials({ username, password });
-    this.props.services.documentService.loadDocument()
-      .then(() => {
+    this.props.services.sessionService.createSession({ recaptchaResult })
+      .then((resp) => {
+        const sessionToken = _.get(resp, 'data.sessionToken');
+        this.props.services.authService.setSession({ sessionToken });
         this.resetRecaptcha();
+        return this.props.services.documentService.loadDocument();
+      })
+      .then(() => {
         this.props.history.push('/passwords');
       })
       .catch(err => {
@@ -121,7 +127,8 @@ export default class Login extends React.Component {
 
             <ReCaptcha
               onChange={result => this.updateRecaptchaResult(result)}
-              reset={this.state.resetRecaptcha} />
+              reset={this.state.resetRecaptcha}
+              darkMode={this.state.darkMode} />
 
             <div className="row">
               <div className="input-field col s12">
