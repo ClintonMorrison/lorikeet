@@ -18,4 +18,4 @@ backup/
 log/
 .DS_Store
 ui/build/
-server
+/server
