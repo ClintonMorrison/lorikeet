@@ -33,21 +33,12 @@ export default class AuthService {
     this.setPassword(password);
   }
 
-  setSession({ sessionToken }) {
-    console.log('setting session token', sessionToken);
-    sessionStorage.setItem('sessionToken', sessionToken);
-  }
-
-  getSessionToken() {
-    return sessionStorage.getItem('sessionToken');
-  }
-
   setPassword(password) {
     sessionStorage.setItem('token', this.firstHash(password));
   }
 
   sessionExists() {
-    return !!(this.getUsername() && this.getToken() && this.getSessionToken());
+    return !!(this.getUsername() && this.getToken());
   }
 
   getUsername() {
@@ -83,8 +74,7 @@ export default class AuthService {
 
   getAuthedHeaders() {
     const username = this.getUsername();
-    const sessionToken = this.getSessionToken();
-    const encoded = btoa(`${username}:${sessionToken}`);
+    const encoded = btoa(`${username}:`);
     return { 'Authorization': `Basic ${encoded}` };
   }
 

@@ -64,8 +64,6 @@ export default class Register extends React.Component {
     const { username, password } = this.state;
     this.props.services.documentService.createDocument({ username, password })
       .then((resp) => {
-        const sessionToken = _.get('data.sessionToken', resp);
-        this.props.services.authService.setSession({ sessionToken });
         this.props.history.push('/passwords')
       })
       .catch(err => {

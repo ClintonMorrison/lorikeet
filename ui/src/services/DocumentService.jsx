@@ -70,9 +70,6 @@ export default class AuthService {
     return this.loadDocument().then(document => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
-      console.log('GOT RESPONSE', resp.data);
-      console.log('11 calling function with: ', { sessionToken: resp?.data?.sessionToken });
-      this.authService.setSession({ sessionToken: resp?.data?.sessionToken });
       this.authService.setPassword(password)
     }).catch(e => {
       this.apiService.handleAuthError(e);
