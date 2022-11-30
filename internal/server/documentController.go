@@ -32,7 +32,7 @@ type DocumentController struct {
 var invalidRequestResponse = DocumentResponse{400, "Invalid request.", ""}
 var usernameTakenResponse = DocumentResponse{400, "Username already taken.", ""}
 var invalidCredentialsResponse = DocumentResponse{401, "Invalid user or credentials.", ""}
-var tooManyRequestsResponse = DocumentResponse{429, "Too many failed attempts. Try again in a few hours.", ""}
+var tooManyRequestsResponse1 = DocumentResponse{429, "Too many failed attempts. Try again in a few hours.", ""}
 var internalServerError = DocumentResponse{500, "Server error. Please try again later.", ""}
 var fallbackLoginErrorJSON, _ = json.Marshal(internalServerError)
 
@@ -45,7 +45,7 @@ func responseForError(err error) DocumentResponse {
 	case ERROR_INVALID_CREDENTIALS:
 		return invalidCredentialsResponse
 	case ERROR_TOO_MANY_REQUESTS:
-		return tooManyRequestsResponse
+		return tooManyRequestsResponse1
 	case ERROR_SERVER_ERROR:
 	default:
 		return internalServerError

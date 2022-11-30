@@ -27,12 +27,12 @@ type ApiResponse struct {
 type MethodHandler func(ApiRequest) ApiResponse // TODO: error?
 
 type RestController struct {
+	requestLogger *log.Logger
 	Get           MethodHandler
 	Post          MethodHandler
 	Put           MethodHandler
 	Delete        MethodHandler
 	Options       MethodHandler
-	requestLogger *log.Logger
 }
 
 type ErrorBody struct {
@@ -45,7 +45,10 @@ func NewErrorResponse(code int, msg string) ApiResponse {
 	return ApiResponse{code, make([]ResponseHeader, 0), body}
 }
 
+var emptyBody = make([]byte, 0)
 var badRequestResponse = NewErrorResponse(400, "Invalid request.")
+var unauthorizedResponse = NewErrorResponse(403, "Invalid username or password.")
+var tooManyRequestsResponse = NewErrorResponse(429, "Too many failed attempts. Try again in a few hours.")
 var serverErrorResponse = NewErrorResponse(500, "Server error. Please try again later.")
 
 func (c *RestController) runMethodHandler(r *http.Request, w http.ResponseWriter, handler MethodHandler) ApiResponse {

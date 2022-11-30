@@ -59,7 +59,7 @@ func Run(
 	documentController := DocumentController{documentService, requestLogger}
 	http.HandleFunc(documentApiPath, documentController.handle)
 
-	sessionController := SessionController{sessionService, requestLogger}
+	sessionController := NewSessionController(sessionService, requestLogger)
 	http.HandleFunc(sessionApiPath, sessionController.handle)
 
 	fmt.Printf("Listening on http://localhost%s\n", address)
