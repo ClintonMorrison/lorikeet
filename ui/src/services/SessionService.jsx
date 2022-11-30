@@ -13,6 +13,10 @@ export default class AuthService {
       username,
       decryptToken,
       recaptchaResult
-    });
+    }, this.authService.getAuthedHeaders());
+  }
+
+  deleteSession() {
+    return this.apiService.del("session", this.authService.getAuthedHeaders());
   }
 }

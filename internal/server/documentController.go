@@ -3,14 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 )
 
 type DocumentResponse struct {
-	Code     int    `json:"-"`
-	Error    string `json:"error,omitempty"`
 	Document string `json:"document,omitempty"`
 }
 
@@ -24,39 +20,111 @@ type DocumentRequest struct {
 	Document string `json:"document"`
 }
 
-type DocumentController struct {
-	service       *DocumentService
-	requestLogger *log.Logger
+func NewDocumentController(service *DocumentService, requestLogger *log.Logger) RestController {
+	// GET /document
+	var get MethodHandler = func(request ApiRequest) ApiResponse {
+		document, err := service.GetDocument(request.Context)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		headers := make([]ResponseHeader, 0)
+
+		responseBody, err := marshalResponse(DocumentResponse{string(document)})
+		if err != nil {
+			return responseForError(err)
+		}
+
+		return ApiResponse{200, headers, responseBody}
+	}
+
+	// POST /document
+	var post MethodHandler = func(request ApiRequest) ApiResponse {
+		parsedBody, err := parseDocumentRequestBody(request.Body)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		sessionToken, err := service.CreateDocument(request.Context, parsedBody.Document)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		headers := make([]ResponseHeader, 0)
+		headers = append(headers, SetSessionCookieHeader(sessionToken))
+
+		return ApiResponse{201, headers, emptyBody}
+	}
+
+	// PUT /document
+	var put MethodHandler = func(request ApiRequest) ApiResponse {
+		parsedBody, err := parseDocumentRequestBody(request.Body)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		// Update password if password was given
+		if len(parsedBody.Password) > 0 {
+			sessionToken, err := service.UpdateDocumentAndPassword(request.Context, parsedBody.Password, parsedBody.Document)
+			if err != nil {
+				return responseForError(err)
+			}
+			fmt.Println("Returning session token! " + sessionToken + "/")
+
+			headers := make([]ResponseHeader, 0)
+			headers = append(headers, SetSessionCookieHeader(sessionToken))
+
+			return ApiResponse{202, headers, emptyBody}
+		}
+
+		err = service.UpdateDocument(request.Context, parsedBody.Document)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		return ApiResponse{202, emptyHeaders, emptyBody}
+	}
+
+	// DELETE /document
+	var delete MethodHandler = func(request ApiRequest) ApiResponse {
+		err := service.DeleteDocument(request.Context)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		headers := make([]ResponseHeader, 0)
+		headers = append(headers, ClearSessionCookieHeader())
+
+		return ApiResponse{204, headers, emptyBody}
+	}
+
+	return RestController{
+		requestLogger: requestLogger,
+		Get:           get,
+		Post:          post,
+		Put:           put,
+		Delete:        delete,
+	}
 }
 
-var invalidRequestResponse = DocumentResponse{400, "Invalid request.", ""}
-var usernameTakenResponse = DocumentResponse{400, "Username already taken.", ""}
-var invalidCredentialsResponse = DocumentResponse{401, "Invalid user or credentials.", ""}
-var tooManyRequestsResponse1 = DocumentResponse{429, "Too many failed attempts. Try again in a few hours.", ""}
-var internalServerError = DocumentResponse{500, "Server error. Please try again later.", ""}
-var fallbackLoginErrorJSON, _ = json.Marshal(internalServerError)
-
-func responseForError(err error) DocumentResponse {
+func responseForError(err error) ApiResponse {
 	switch err {
 	case ERROR_BAD_REQUEST:
-		return invalidRequestResponse
+		return badRequestResponse
 	case ERROR_INVALID_USER_NAME:
 		return usernameTakenResponse
 	case ERROR_INVALID_CREDENTIALS:
-		return invalidCredentialsResponse
+		return unauthorizedResponse
 	case ERROR_TOO_MANY_REQUESTS:
-		return tooManyRequestsResponse1
+		return tooManyRequestsResponse
 	case ERROR_SERVER_ERROR:
 	default:
-		return internalServerError
+		return serverErrorResponse
 	}
 
-	return internalServerError
+	return serverErrorResponse
 }
 
-//
-// Document API
-//
 func parseDocumentRequestBody(body []byte) (*DocumentRequest, error) {
 	documentRequest := &DocumentRequest{}
 	err := json.Unmarshal(body, documentRequest)
@@ -67,136 +135,10 @@ func parseDocumentRequestBody(body []byte) (*DocumentRequest, error) {
 	return documentRequest, nil
 }
 
-func (c *DocumentController) postDocument(w http.ResponseWriter, context RequestContext, body []byte) DocumentResponse {
-	request, err := parseDocumentRequestBody(body)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	sessionToken, err := c.service.CreateDocument(context, request.Document)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	SetSessionCookie(w, sessionToken)
-
-	return DocumentResponse{201, "", ""}
-}
-
-func (c *DocumentController) putDocument(w http.ResponseWriter, context RequestContext, body []byte) DocumentResponse {
-	request, err := parseDocumentRequestBody(body)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	// Update password if password was given
-	if len(request.Password) > 0 {
-		sessionToken, err := c.service.UpdateDocumentAndPassword(context, request.Password, request.Document)
-		if err != nil {
-			return responseForError(err)
-		}
-		fmt.Println("Returning session token! " + sessionToken + "/")
-		SetSessionCookie(w, sessionToken)
-
-		return DocumentResponse{202, "", ""}
-	}
-
-	err = c.service.UpdateDocument(context, request.Document)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	return DocumentResponse{202, "", ""}
-}
-
-func (c *DocumentController) getDocument(w http.ResponseWriter, context RequestContext) DocumentResponse {
-	document, err := c.service.GetDocument(context)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	return DocumentResponse{200, "", string(document)}
-}
-
-func (c *DocumentController) deleteDocument(w http.ResponseWriter, context RequestContext) DocumentResponse {
-	err := c.service.DeleteDocument(context)
-	if err != nil {
-		return responseForError(err)
-	}
-
-	ClearSessionCookie(w)
-
-	return DocumentResponse{204, "", ""}
-}
-
-func (c *DocumentController) parseRequestOrWriteError(w http.ResponseWriter, r *http.Request) (RequestContext, []byte) {
-	// Read auth headers
-	context := ParseBasicContext(r)
-	if context.username == "" || context.ip == "" {
-		c.writeResponse(r, w, invalidRequestResponse, context)
-		return RequestContext{}, nil
-	}
-
-	// Read body
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		c.writeResponse(r, w, invalidRequestResponse, context)
-		return RequestContext{}, nil
-	}
-
-	return context, body
-}
-
-func (c *DocumentController) handle(w http.ResponseWriter, r *http.Request) {
-	context, body := c.parseRequestOrWriteError(w, r)
-
-	var response DocumentResponse
-
-	// Call handler based on method
-	switch r.Method {
-	case "GET":
-		response = c.getDocument(w, context)
-	case "PUT":
-		response = c.putDocument(w, context, body)
-	case "POST":
-		response = c.postDocument(w, context, body)
-	case "DELETE":
-		response = c.deleteDocument(w, context)
-	default:
-		response = invalidRequestResponse
-	}
-
-	c.writeResponse(r, w, response, context)
-}
-
-func (c *DocumentController) logRequest(r *http.Request, response DocumentResponse, context RequestContext) {
-	ip := r.Header.Get("X-Forwarded-For")
-	result := "OK"
-	if response.Error != "" {
-		result = response.Error
-	}
-
-	name := context.username
-
-	c.requestLogger.Printf(
-		"%s %s | %d [%s] | %s | %s\n",
-		r.Method, r.RequestURI,
-		response.Code, result, name,
-		ip)
-}
-
-func (c *DocumentController) writeResponse(r *http.Request, w http.ResponseWriter, response DocumentResponse, context RequestContext) {
-	c.logRequest(r, response, context)
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(response.Code)
-
+func marshalResponse(response DocumentResponse) ([]byte, error) {
 	jsonResponse, err := json.Marshal(response)
-
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write(fallbackErrorJSON)
-		return
+		return emptyBody, ERROR_SERVER_ERROR
 	}
-
-	w.Write(jsonResponse)
+	return jsonResponse, nil
 }

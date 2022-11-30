@@ -6,21 +6,20 @@ import (
 )
 
 type SessionRequest struct {
-	Username        string `json:"username"`
 	DecryptToken    string `json:"decryptToken"`
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
 func NewSessionController(service *SessionService, requestLogger *log.Logger) RestController {
-	// `POST /session`
-	var Post MethodHandler = func(request ApiRequest) ApiResponse {
+	// POST /session
+	var post MethodHandler = func(request ApiRequest) ApiResponse {
 		sessionRequest, err := parseSessionRequestBody(request.Body)
 		if err != nil {
 			return badRequestResponse
 		}
 
 		auth := Auth{
-			username: sessionRequest.Username,
+			username: request.Context.username,
 			password: sessionRequest.DecryptToken,
 			ip:       request.Context.ip,
 		}
@@ -36,13 +35,25 @@ func NewSessionController(service *SessionService, requestLogger *log.Logger) Re
 		return ApiResponse{201, headers, emptyBody}
 	}
 
+	// DELETE /session
+	var delete MethodHandler = func(request ApiRequest) ApiResponse {
+		err := service.RevokeSession(request.Context.sessionToken, request.Context.username, request.Context.ip)
+		if err != nil {
+			return responseForSessionError(err)
+		}
+
+		headers := make([]ResponseHeader, 0)
+		headers = append(headers, ClearSessionCookieHeader())
+
+		return ApiResponse{204, headers, emptyBody}
+	}
+
 	return RestController{
 		requestLogger: requestLogger,
-		Post:          Post,
+		Post:          post,
+		Delete:        delete,
 	}
 }
-
-var fallbackErrorJSON, _ = json.Marshal(internalServerError)
 
 func responseForSessionError(err error) ApiResponse {
 	switch err {
@@ -50,7 +61,7 @@ func responseForSessionError(err error) ApiResponse {
 	case ERROR_INVALID_USER_NAME:
 		return badRequestResponse
 	case ERROR_INVALID_CREDENTIALS:
-		return unauthorizedResponse
+		return badCredentialsResponse
 	case ERROR_TOO_MANY_REQUESTS:
 		return tooManyRequestsResponse
 	case ERROR_SERVER_ERROR:

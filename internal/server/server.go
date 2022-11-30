@@ -56,7 +56,7 @@ func Run(
 
 	repository.createDataDirectory()
 
-	documentController := DocumentController{documentService, requestLogger}
+	documentController := NewDocumentController(documentService, requestLogger)
 	http.HandleFunc(documentApiPath, documentController.handle)
 
 	sessionController := NewSessionController(sessionService, requestLogger)

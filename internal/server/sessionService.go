@@ -46,3 +46,22 @@ func (s *SessionService) GrantSession(auth Auth, recaptchaResponse string) (stri
 
 	return session.SessionToken, nil
 }
+
+// RevokeSession deletes an existing session
+func (s *SessionService) RevokeSession(token string, username string, ip string) error {
+	// Check request isn't blocked
+	if !s.lockoutTable.shouldAllow(ip, username) {
+		s.lockoutTable.logFailure(ip, username)
+		return ERROR_TOO_MANY_REQUESTS
+	}
+
+	// Revoke session
+	err := s.sessionTable.RevokeSession(token, username)
+	if err != nil {
+		s.errorLogger.Println("Unable to revoke session")
+		s.lockoutTable.logFailure(ip, username)
+		return err
+	}
+
+	return nil
+}

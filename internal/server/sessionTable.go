@@ -115,6 +115,37 @@ func (st *SessionTable) GetSession(token string, username string, ip string) (*S
 	return &session, nil
 }
 
+func (st *SessionTable) RevokeSession(token string, username string) error {
+	st.mux.Lock()
+	defer st.mux.Unlock()
+
+	st.purgeExpiredSessions()
+
+	// Get session from map
+	session, exists := st.sessionByToken[token]
+	if !exists {
+		fmt.Println("session not present")
+		return ERROR_INVALID_CREDENTIALS
+	}
+
+	// Make sure username matches
+	if session.Username != username {
+		fmt.Println("session username mismatch")
+		return ERROR_INVALID_CREDENTIALS
+	}
+
+	// Make sure token matches
+	if session.SessionToken != token {
+		fmt.Println("session token mismatch")
+		return ERROR_INVALID_CREDENTIALS
+	}
+
+	// Remove the session
+	delete(st.sessionByToken, token)
+
+	return nil
+}
+
 func (st *SessionTable) purgeExpiredSessions() {
 	now := time.Now()
 
