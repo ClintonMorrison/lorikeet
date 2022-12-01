@@ -32,7 +32,7 @@ func NewSessionController(service *SessionService, lockoutTable *LockoutTable, r
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, SetSessionCookieHeader(token))
 
-		return ApiResponse{201, headers, emptyBody}
+		return ApiResponse{201, headers, emptyBody, ""}
 	}
 
 	// DELETE /session
@@ -45,7 +45,7 @@ func NewSessionController(service *SessionService, lockoutTable *LockoutTable, r
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, ClearSessionCookieHeader())
 
-		return ApiResponse{204, headers, emptyBody}
+		return ApiResponse{204, headers, emptyBody, ""}
 	}
 
 	return RestController{

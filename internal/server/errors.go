@@ -1,5 +1,7 @@
 package server
 
+import "encoding/json"
+
 type TypedError string
 
 const (
@@ -12,6 +14,12 @@ const (
 
 func (t TypedError) Error() string {
 	return string(t)
+}
+
+func NewErrorResponse(code int, msg string) ApiResponse {
+	var body, _ = json.Marshal(ErrorBody{msg})
+
+	return ApiResponse{code, emptyHeaders, body, msg}
 }
 
 var badRequestResponse = NewErrorResponse(400, "Invalid request.")

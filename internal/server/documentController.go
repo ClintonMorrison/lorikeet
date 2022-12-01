@@ -35,7 +35,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 			return responseForError(err)
 		}
 
-		return ApiResponse{200, headers, responseBody}
+		return ApiResponse{200, headers, responseBody, ""}
 	}
 
 	// POST /document
@@ -53,7 +53,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, SetSessionCookieHeader(sessionToken))
 
-		return ApiResponse{201, headers, emptyBody}
+		return ApiResponse{201, headers, emptyBody, ""}
 	}
 
 	// PUT /document
@@ -73,7 +73,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 			headers := make([]ResponseHeader, 0)
 			headers = append(headers, SetSessionCookieHeader(sessionToken))
 
-			return ApiResponse{202, headers, emptyBody}
+			return ApiResponse{202, headers, emptyBody, ""}
 		}
 
 		err = service.UpdateDocument(request.Context, parsedBody.Document)
@@ -81,7 +81,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 			return responseForError(err)
 		}
 
-		return ApiResponse{202, emptyHeaders, emptyBody}
+		return ApiResponse{202, emptyHeaders, emptyBody, ""}
 	}
 
 	// DELETE /document
@@ -94,7 +94,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, ClearSessionCookieHeader())
 
-		return ApiResponse{204, headers, emptyBody}
+		return ApiResponse{204, headers, emptyBody, ""}
 	}
 
 	return RestController{

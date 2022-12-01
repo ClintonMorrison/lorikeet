@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,9 +18,10 @@ type ApiRequest struct {
 }
 
 type ApiResponse struct {
-	Code    int
-	Headers []ResponseHeader
-	Body    []byte
+	Code     int
+	Headers  []ResponseHeader
+	Body     []byte
+	ErrorMsg string
 }
 
 type MethodHandler func(ApiRequest) ApiResponse
@@ -37,12 +37,6 @@ type RestController struct {
 
 type ErrorBody struct {
 	Error string `json:"error"`
-}
-
-func NewErrorResponse(code int, msg string) ApiResponse {
-	var body, _ = json.Marshal(ErrorBody{msg})
-
-	return ApiResponse{code, make([]ResponseHeader, 0), body}
 }
 
 var emptyBody = make([]byte, 0)
@@ -103,7 +97,7 @@ func (c *RestController) Handle(w http.ResponseWriter, r *http.Request) {
 
 	response := c.checkLockoutAndHandle(w, r, context)
 
-	c.logRequest(r, response.Code, context.username)
+	c.logRequest(r, response, context.username)
 
 	w.Header().Add("Content-Type", "application/json")
 	for _, header := range response.Headers {
@@ -114,11 +108,11 @@ func (c *RestController) Handle(w http.ResponseWriter, r *http.Request) {
 	w.Write(response.Body)
 }
 
-func (c *RestController) logRequest(r *http.Request, responseCode int, username string) {
+func (c *RestController) logRequest(r *http.Request, response ApiResponse, username string) {
 	ip := r.Header.Get("X-Forwarded-For")
 	result := "OK"
-	if responseCode >= 400 {
-		result = "ERROR"
+	if response.ErrorMsg != "" {
+		result = response.ErrorMsg
 	}
 
 	name := username
@@ -126,6 +120,6 @@ func (c *RestController) logRequest(r *http.Request, responseCode int, username 
 	c.requestLogger.Printf(
 		"%s %s | %d [%s] | %s | %s\n",
 		r.Method, r.RequestURI,
-		responseCode, result, name,
+		response.Code, result, name,
 		ip)
 }
