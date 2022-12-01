@@ -10,7 +10,7 @@ type SessionRequest struct {
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
-func NewSessionController(service *SessionService, requestLogger *log.Logger) RestController {
+func NewSessionController(service *SessionService, lockoutTable *LockoutTable, requestLogger *log.Logger) RestController {
 	// POST /session
 	var post MethodHandler = func(request ApiRequest) ApiResponse {
 		sessionRequest, err := parseSessionRequestBody(request.Body)
@@ -49,6 +49,7 @@ func NewSessionController(service *SessionService, requestLogger *log.Logger) Re
 	}
 
 	return RestController{
+		lockoutTable:  lockoutTable,
 		requestLogger: requestLogger,
 		Post:          post,
 		Delete:        delete,

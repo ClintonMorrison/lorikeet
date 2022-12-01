@@ -27,6 +27,7 @@ type ApiResponse struct {
 type MethodHandler func(ApiRequest) ApiResponse
 
 type RestController struct {
+	lockoutTable  *LockoutTable
 	requestLogger *log.Logger
 	Get           MethodHandler
 	Post          MethodHandler
@@ -47,7 +48,7 @@ func NewErrorResponse(code int, msg string) ApiResponse {
 var emptyBody = make([]byte, 0)
 var emptyHeaders = make([]ResponseHeader, 0)
 
-func (c *RestController) runMethodHandler(r *http.Request, w http.ResponseWriter, handler MethodHandler) ApiResponse {
+func (c *RestController) runMethodHandler(w http.ResponseWriter, r *http.Request, context RequestContext, handler MethodHandler) ApiResponse {
 	// This resource does not support the request method
 	if handler == nil {
 		return badRequestResponse
@@ -60,33 +61,49 @@ func (c *RestController) runMethodHandler(r *http.Request, w http.ResponseWriter
 
 	request := ApiRequest{
 		Headers: r.Header,
-		Context: ParseBasicContext(r),
+		Context: context,
 		Body:    body,
 	}
 
 	response := handler(request)
 
-	c.logRequest(r, response.Code, request.Context.username)
 	return response
 }
 
-func (c *RestController) handle(w http.ResponseWriter, r *http.Request) {
+func (c *RestController) checkLockoutAndHandle(w http.ResponseWriter, r *http.Request, context RequestContext) ApiResponse {
+	if !c.lockoutTable.ShouldAllow(context.ip, context.username) {
+		return tooManyRequestsResponse
+	}
 
 	response := ApiResponse{}
 
 	// Call handler based on method
 	switch r.Method {
 	case "GET":
-		response = c.runMethodHandler(r, w, c.Get)
+		response = c.runMethodHandler(w, r, context, c.Get)
 	case "PUT":
-		response = c.runMethodHandler(r, w, c.Put)
+		response = c.runMethodHandler(w, r, context, c.Put)
 	case "POST":
-		response = c.runMethodHandler(r, w, c.Post)
+		response = c.runMethodHandler(w, r, context, c.Post)
 	case "DELETE":
-		response = c.runMethodHandler(r, w, c.Delete)
+		response = c.runMethodHandler(w, r, context, c.Delete)
 	default:
 		response = badRequestResponse
 	}
+
+	if response.Code >= 400 {
+		c.lockoutTable.LogFailure(context.ip, context.username)
+	}
+
+	return response
+}
+
+func (c *RestController) Handle(w http.ResponseWriter, r *http.Request) {
+	context := ParseBasicContext(r)
+
+	response := c.checkLockoutAndHandle(w, r, context)
+
+	c.logRequest(r, response.Code, context.username)
 
 	w.Header().Add("Content-Type", "application/json")
 	for _, header := range response.Headers {

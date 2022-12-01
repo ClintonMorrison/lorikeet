@@ -9,7 +9,6 @@ import (
 type DocumentService struct {
 	repo            *Repository
 	recaptchaClient *RecaptchaClient
-	lockoutTable    *LockoutTable
 	sessionTable    *SessionTable
 	errorLogger     *log.Logger
 
@@ -18,16 +17,10 @@ type DocumentService struct {
 }
 
 func (s *DocumentService) checkUserNameFree(auth Auth) error {
-	allowed := s.lockoutTable.shouldAllow(auth.ip, "")
-	if !allowed {
-		return ERROR_TOO_MANY_REQUESTS
-	}
-
 	exists, err := s.repo.saltFileExists(auth)
 	s.logError(err)
 
 	if exists {
-		s.lockoutTable.logFailure(auth.ip, "")
 		return ERROR_INVALID_USER_NAME
 	}
 
@@ -57,11 +50,9 @@ func (s *DocumentService) checkDocumentExists(auth Auth, salt []byte) error {
 }
 
 func (s *DocumentService) authFromSession(context RequestContext) (Auth, error) {
-	// TODO: check if lockout table should allow?
 	fmt.Println("Looking up session " + context.sessionToken)
 	session, err := s.sessionTable.GetSession(context.sessionToken, context.username, context.ip)
 	if err != nil {
-		s.lockoutTable.logFailure(context.ip, context.username)
 		return Auth{}, ERROR_INVALID_CREDENTIALS
 	}
 
@@ -69,22 +60,15 @@ func (s *DocumentService) authFromSession(context RequestContext) (Auth, error) 
 }
 
 func (s *DocumentService) checkAuth(auth Auth) ([]byte, error) {
-	allowed := s.lockoutTable.shouldAllow(auth.ip, auth.username)
-	if !allowed {
-		return nil, ERROR_TOO_MANY_REQUESTS
-	}
-
 	// TODO: validate session here
 
 	salt, err := s.saltForUser(auth)
 	if err != nil {
-		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return nil, err
 	}
 
 	err = s.checkDocumentExists(auth, salt)
 	if err != nil {
-		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return nil, err
 	}
 
@@ -112,7 +96,6 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha was not valid")
-		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return "", ERROR_INVALID_CREDENTIALS
 	}
 
@@ -141,7 +124,6 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 	session, err := s.sessionTable.Grant(auth.username, auth.ip, auth.password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
-		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return "", err
 	}
 	if err != nil {
@@ -269,7 +251,6 @@ func (s *DocumentService) UpdateDocumentAndPassword(context RequestContext, newP
 	session, err := s.sessionTable.Grant(newAuth.username, newAuth.ip, newAuth.password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
-		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return "", err
 	}
 	if err != nil {

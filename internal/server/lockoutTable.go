@@ -6,7 +6,7 @@ import (
 )
 
 const errorWindow = time.Hour * 6
-const maxErrorsInWindow = 6
+const maxErrorsInWindow = 8
 
 type LockoutTable struct {
 	errorTimesByIP   map[string][]time.Time
@@ -20,7 +20,7 @@ func NewLockoutTable() *LockoutTable {
 		errorTimesByUser: make(map[string][]time.Time, 0)}
 }
 
-func (l *LockoutTable) shouldAllow(ip string, username string) bool {
+func (l *LockoutTable) ShouldAllow(ip string, username string) bool {
 	l.purgeErrors(ip, username)
 
 	l.mux.RLock()
@@ -36,7 +36,7 @@ func (l *LockoutTable) shouldAllow(ip string, username string) bool {
 	return true
 }
 
-func (l *LockoutTable) logFailure(ip string, username string) {
+func (l *LockoutTable) LogFailure(ip string, username string) {
 	t := time.Now()
 
 	l.mux.Lock()

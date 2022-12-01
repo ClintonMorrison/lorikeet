@@ -42,7 +42,6 @@ func Run(
 	documentService := &DocumentService{
 		repo:            repository,
 		recaptchaClient: recaptchaClient,
-		lockoutTable:    lockoutTable,
 		sessionTable:    sessionTable,
 		errorLogger:     errorLogger,
 		lockByUser:      make(map[string]*sync.RWMutex),
@@ -51,17 +50,16 @@ func Run(
 		recaptchaClient: recaptchaClient,
 		documentService: documentService,
 		sessionTable:    sessionTable,
-		lockoutTable:    lockoutTable,
 		errorLogger:     errorLogger,
 	}
 
 	repository.createDataDirectory()
 
-	documentController := NewDocumentController(documentService, requestLogger)
-	http.HandleFunc(documentApiPath, documentController.handle)
+	documentController := NewDocumentController(documentService, lockoutTable, requestLogger)
+	http.HandleFunc(documentApiPath, documentController.Handle)
 
-	sessionController := NewSessionController(sessionService, requestLogger)
-	http.HandleFunc(sessionApiPath, sessionController.handle)
+	sessionController := NewSessionController(sessionService, lockoutTable, requestLogger)
+	http.HandleFunc(sessionApiPath, sessionController.Handle)
 
 	fmt.Printf("Listening on http://localhost%s\n", address)
 	err = http.ListenAndServe(address, nil)
