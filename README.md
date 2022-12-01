@@ -6,8 +6,6 @@ Lorikeet is a password manager web app, created with Golang, React and Materiali
 
 ## TODO:
 - secure cookie
-- refactor services?
-- add more logging?
 - update frontend libs and refactor UI
 - test everything
 

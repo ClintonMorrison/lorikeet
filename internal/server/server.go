@@ -15,6 +15,7 @@ func Run(
 	dataPath string,
 	address string,
 	recaptchaSecret string,
+	localDev bool,
 	logPath string,
 	requestLogFilename string,
 	errorLogFilename string) {
@@ -33,6 +34,7 @@ func Run(
 		panic(err)
 	}
 
+	cookieHelper := &CookieHelper{localDev}
 	recaptchaClient := &RecaptchaClient{
 		secret: recaptchaSecret,
 	}
@@ -55,10 +57,10 @@ func Run(
 
 	repository.createDataDirectory()
 
-	documentController := NewDocumentController(documentService, lockoutTable, requestLogger)
+	documentController := NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
 	http.HandleFunc(documentApiPath, documentController.Handle)
 
-	sessionController := NewSessionController(sessionService, lockoutTable, requestLogger)
+	sessionController := NewSessionController(cookieHelper, sessionService, lockoutTable, requestLogger)
 	http.HandleFunc(sessionApiPath, sessionController.Handle)
 
 	fmt.Printf("Listening on http://localhost%s\n", address)

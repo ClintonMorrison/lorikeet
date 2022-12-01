@@ -34,27 +34,41 @@ func ParseCookies(request *http.Request) map[string]string {
 	return result
 }
 
-const sessionCookieName = "session"
-
-func SetCookieHeader(name string, value string, lifespan time.Duration) ResponseHeader {
-	// TODO: add "Secure" in prod environment?
-	maxAge := int(lifespan.Seconds())
-	return ResponseHeader{
-		"Set-Cookie",
-		fmt.Sprintf("%s=%s; SameSite=Strict; Max-Age=%d; HttpOnly; Path=/;",
-			name, url.QueryEscape(value), maxAge),
-	}
-}
-
 func GetSessionToken(request *http.Request) string {
 	cookies := ParseCookies(request)
 	return cookies[sessionCookieName]
 }
 
-func SetSessionCookieHeader(sessionToken string) ResponseHeader {
-	return SetCookieHeader(sessionCookieName, sessionToken, sessionLifespan)
+type CookieHelper struct {
+	localDev bool
 }
 
-func ClearSessionCookieHeader() ResponseHeader {
-	return SetCookieHeader(sessionCookieName, "", 0)
+const sessionCookieName = "session"
+
+func (ch *CookieHelper) SetCookieHeader(name string, value string, lifespan time.Duration) ResponseHeader {
+	maxAge := int(lifespan.Seconds())
+
+	parts := make([]string, 0)
+	parts = append(parts, fmt.Sprintf("%s=%s", name, url.QueryEscape(value)))
+	parts = append(parts, "SameSite=Strict")
+	parts = append(parts, fmt.Sprintf("Max-Age=%d", maxAge))
+	parts = append(parts, "HttpOnly")
+	parts = append(parts, "Path=/")
+
+	if !ch.localDev {
+		parts = append(parts, "Secure")
+	}
+
+	return ResponseHeader{
+		"Set-Cookie",
+		strings.Join(parts, "; "),
+	}
+}
+
+func (ch *CookieHelper) SetSessionCookieHeader(sessionToken string) ResponseHeader {
+	return ch.SetCookieHeader(sessionCookieName, sessionToken, sessionLifespan)
+}
+
+func (ch *CookieHelper) ClearSessionCookieHeader() ResponseHeader {
+	return ch.SetCookieHeader(sessionCookieName, "", 0)
 }

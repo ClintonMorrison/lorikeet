@@ -20,7 +20,7 @@ type DocumentRequest struct {
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
-func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable, requestLogger *log.Logger) RestController {
+func NewDocumentController(cookieHelper *CookieHelper, service *DocumentService, lockoutTable *LockoutTable, requestLogger *log.Logger) RestController {
 	// GET /document
 	var get MethodHandler = func(request ApiRequest) ApiResponse {
 		document, err := service.GetDocument(request.Context)
@@ -51,7 +51,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 		}
 
 		headers := make([]ResponseHeader, 0)
-		headers = append(headers, SetSessionCookieHeader(sessionToken))
+		headers = append(headers, cookieHelper.SetSessionCookieHeader(sessionToken))
 
 		return ApiResponse{201, headers, emptyBody, ""}
 	}
@@ -71,7 +71,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 			}
 
 			headers := make([]ResponseHeader, 0)
-			headers = append(headers, SetSessionCookieHeader(sessionToken))
+			headers = append(headers, cookieHelper.SetSessionCookieHeader(sessionToken))
 
 			return ApiResponse{202, headers, emptyBody, ""}
 		}
@@ -92,7 +92,7 @@ func NewDocumentController(service *DocumentService, lockoutTable *LockoutTable,
 		}
 
 		headers := make([]ResponseHeader, 0)
-		headers = append(headers, ClearSessionCookieHeader())
+		headers = append(headers, cookieHelper.ClearSessionCookieHeader())
 
 		return ApiResponse{204, headers, emptyBody, ""}
 	}
