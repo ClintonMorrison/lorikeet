@@ -26,7 +26,7 @@ func NewSessionController(service *SessionService, requestLogger *log.Logger) Re
 
 		token, err := service.GrantSession(auth, sessionRequest.RecaptchaResult)
 		if err != nil {
-			return responseForSessionError(err)
+			return responseForError(err)
 		}
 
 		headers := make([]ResponseHeader, 0)
@@ -39,7 +39,7 @@ func NewSessionController(service *SessionService, requestLogger *log.Logger) Re
 	var delete MethodHandler = func(request ApiRequest) ApiResponse {
 		err := service.RevokeSession(request.Context.sessionToken, request.Context.username, request.Context.ip)
 		if err != nil {
-			return responseForSessionError(err)
+			return responseForError(err)
 		}
 
 		headers := make([]ResponseHeader, 0)
@@ -53,23 +53,6 @@ func NewSessionController(service *SessionService, requestLogger *log.Logger) Re
 		Post:          post,
 		Delete:        delete,
 	}
-}
-
-func responseForSessionError(err error) ApiResponse {
-	switch err {
-	case ERROR_BAD_REQUEST:
-	case ERROR_INVALID_USER_NAME:
-		return badRequestResponse
-	case ERROR_INVALID_CREDENTIALS:
-		return badCredentialsResponse
-	case ERROR_TOO_MANY_REQUESTS:
-		return tooManyRequestsResponse
-	case ERROR_SERVER_ERROR:
-	default:
-		return serverErrorResponse
-	}
-
-	return serverErrorResponse
 }
 
 func parseSessionRequestBody(body []byte) (*SessionRequest, error) {

@@ -8,7 +8,7 @@ export default class AuthService {
     this.authService = authService;
   }
 
-  createDocument({ username, password }) {
+  createDocument({ username, password, recaptchaResult }) {
     this.authService.setCredentials({ username, password });
 
     const initialDocument = JSON.stringify({ passwords: [] });
@@ -16,7 +16,8 @@ export default class AuthService {
 
     return this.apiService.post("document", {
       document: encryptedDocument,
-      password: this.authService.doubleHash(password)
+      password: this.authService.doubleHash(password),
+      recaptchaResult,
     }, this.authService.getRegisterHeaders());
   }
 

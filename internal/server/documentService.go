@@ -7,10 +7,11 @@ import (
 )
 
 type DocumentService struct {
-	repo         *Repository
-	lockoutTable *LockoutTable
-	sessionTable *SessionTable
-	errorLogger  *log.Logger
+	repo            *Repository
+	recaptchaClient *RecaptchaClient
+	lockoutTable    *LockoutTable
+	sessionTable    *SessionTable
+	errorLogger     *log.Logger
 
 	lockByUser map[string]*sync.RWMutex
 	lockMux    sync.RWMutex
@@ -102,10 +103,18 @@ func (s *DocumentService) createSalt(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (s *DocumentService) CreateDocument(context RequestContext, document string) (string, error) {
+func (s *DocumentService) CreateDocument(context RequestContext, document string, recaptchaResponse string) (string, error) {
 	auth := context.ToAuth(context.password)
 
-	// TODO: check recaptcha??
+	fmt.Println("Using password: " + context.password)
+
+	// Validate recaptcha
+	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
+	if !recaptchaValid {
+		s.errorLogger.Println("Recaptcha was not valid")
+		s.lockoutTable.logFailure(auth.ip, auth.username)
+		return "", ERROR_INVALID_CREDENTIALS
+	}
 
 	userMux := s.getLockForUser(auth.username)
 	userMux.Lock()

@@ -40,11 +40,12 @@ func Run(
 	lockoutTable := NewLockoutTable()
 	sessionTable := NewSessionTable()
 	documentService := &DocumentService{
-		repo:         repository,
-		lockoutTable: lockoutTable,
-		sessionTable: sessionTable,
-		errorLogger:  errorLogger,
-		lockByUser:   make(map[string]*sync.RWMutex),
+		repo:            repository,
+		recaptchaClient: recaptchaClient,
+		lockoutTable:    lockoutTable,
+		sessionTable:    sessionTable,
+		errorLogger:     errorLogger,
+		lockByUser:      make(map[string]*sync.RWMutex),
 	}
 	sessionService := &SessionService{
 		recaptchaClient: recaptchaClient,

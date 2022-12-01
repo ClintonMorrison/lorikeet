@@ -24,7 +24,7 @@ type ApiResponse struct {
 	Body    []byte
 }
 
-type MethodHandler func(ApiRequest) ApiResponse // TODO: error?
+type MethodHandler func(ApiRequest) ApiResponse
 
 type RestController struct {
 	requestLogger *log.Logger
@@ -32,7 +32,6 @@ type RestController struct {
 	Post          MethodHandler
 	Put           MethodHandler
 	Delete        MethodHandler
-	Options       MethodHandler
 }
 
 type ErrorBody struct {
@@ -47,13 +46,6 @@ func NewErrorResponse(code int, msg string) ApiResponse {
 
 var emptyBody = make([]byte, 0)
 var emptyHeaders = make([]ResponseHeader, 0)
-
-var badRequestResponse = NewErrorResponse(400, "Invalid request.")
-var usernameTakenResponse = NewErrorResponse(400, "Username already taken.")
-var unauthorizedResponse = NewErrorResponse(401, "Your session has expired, please login again.")
-var badCredentialsResponse = NewErrorResponse(401, "Invalid username or password.")
-var tooManyRequestsResponse = NewErrorResponse(429, "Too many failed attempts. Try again in a few hours.")
-var serverErrorResponse = NewErrorResponse(500, "Server error. Please try again later.")
 
 func (c *RestController) runMethodHandler(r *http.Request, w http.ResponseWriter, handler MethodHandler) ApiResponse {
 	// This resource does not support the request method

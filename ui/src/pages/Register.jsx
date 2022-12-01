@@ -61,8 +61,8 @@ export default class Register extends React.Component {
       return;
     }
 
-    const { username, password } = this.state;
-    this.props.services.documentService.createDocument({ username, password })
+    const { username, password, recaptchaResult } = this.state;
+    this.props.services.documentService.createDocument({ username, password, recaptchaResult })
       .then((resp) => {
         this.props.history.push('/passwords')
       })

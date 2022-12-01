@@ -7,23 +7,22 @@ import (
 	"net/url"
 )
 
-// TODO: see https://developers.google.com/recaptcha/docs/verify
+// See https://developers.google.com/recaptcha/docs/verify
 
 type RecaptchaClient struct {
 	secret string
 }
 
 type recaptchaValidationResponse struct {
-	Success    bool `json:"success"`
+	Success            bool   `json:"success"`
 	ChallengeTimestamp string `json:"challenge_ts"`
-	Hostname string `json:"hostname"`
+	Hostname           string `json:"hostname"`
 }
 
-
 // VerifyRecaptcha returns true if recaptcha is valid
-func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) (bool) {
+func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) bool {
 	data := url.Values{
-		"secret": {rc.secret},
+		"secret":   {rc.secret},
 		"response": {recaptchaResponse},
 		"remoteip": {ip},
 	}
@@ -37,7 +36,6 @@ func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) (bool) {
 	if err != nil {
 		return false
 	}
-
 
 	parsedResponse := &recaptchaValidationResponse{}
 	err = json.Unmarshal(body, parsedResponse)

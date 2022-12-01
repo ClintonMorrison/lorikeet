@@ -23,7 +23,7 @@ func (s *SessionService) GrantSession(auth Auth, recaptchaResponse string) (stri
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
 	if !recaptchaValid {
-		s.errorLogger.Println("Recaptcha was not valid")
+		s.errorLogger.Println("Recaptcha in grant session request was not valid")
 		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return "", ERROR_INVALID_CREDENTIALS
 	}
@@ -31,7 +31,7 @@ func (s *SessionService) GrantSession(auth Auth, recaptchaResponse string) (stri
 	// Validate auth
 	_, err := s.documentService.checkAuth(auth)
 	if err != nil {
-		s.errorLogger.Println("Auth in session request was not valid")
+		s.errorLogger.Println("Auth in grant session request was not valid")
 		s.lockoutTable.logFailure(auth.ip, auth.username)
 		return "", ERROR_INVALID_CREDENTIALS
 	}

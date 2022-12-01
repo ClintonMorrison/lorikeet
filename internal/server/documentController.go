@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -16,8 +15,9 @@ type PasswordRequest struct {
 }
 
 type DocumentRequest struct {
-	Password string `json:"password,omitempty"`
-	Document string `json:"document"`
+	Password        string `json:"password,omitempty"`
+	Document        string `json:"document"`
+	RecaptchaResult string `json:"recaptchaResult"`
 }
 
 func NewDocumentController(service *DocumentService, requestLogger *log.Logger) RestController {
@@ -45,7 +45,7 @@ func NewDocumentController(service *DocumentService, requestLogger *log.Logger) 
 			return responseForError(err)
 		}
 
-		sessionToken, err := service.CreateDocument(request.Context, parsedBody.Document)
+		sessionToken, err := service.CreateDocument(request.Context, parsedBody.Document, parsedBody.RecaptchaResult)
 		if err != nil {
 			return responseForError(err)
 		}
@@ -69,7 +69,6 @@ func NewDocumentController(service *DocumentService, requestLogger *log.Logger) 
 			if err != nil {
 				return responseForError(err)
 			}
-			fmt.Println("Returning session token! " + sessionToken + "/")
 
 			headers := make([]ResponseHeader, 0)
 			headers = append(headers, SetSessionCookieHeader(sessionToken))
@@ -105,24 +104,6 @@ func NewDocumentController(service *DocumentService, requestLogger *log.Logger) 
 		Put:           put,
 		Delete:        delete,
 	}
-}
-
-func responseForError(err error) ApiResponse {
-	switch err {
-	case ERROR_BAD_REQUEST:
-		return badRequestResponse
-	case ERROR_INVALID_USER_NAME:
-		return usernameTakenResponse
-	case ERROR_INVALID_CREDENTIALS:
-		return unauthorizedResponse
-	case ERROR_TOO_MANY_REQUESTS:
-		return tooManyRequestsResponse
-	case ERROR_SERVER_ERROR:
-	default:
-		return serverErrorResponse
-	}
-
-	return serverErrorResponse
 }
 
 func parseDocumentRequestBody(body []byte) (*DocumentRequest, error) {
