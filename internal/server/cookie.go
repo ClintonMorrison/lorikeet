@@ -35,7 +35,6 @@ func ParseCookies(request *http.Request) map[string]string {
 }
 
 const sessionCookieName = "session"
-const sessionCookieLifespan = time.Second * 60 // TODO
 
 func SetCookieHeader(name string, value string, lifespan time.Duration) ResponseHeader {
 	// TODO: add "Secure" in prod environment?
@@ -53,7 +52,7 @@ func GetSessionToken(request *http.Request) string {
 }
 
 func SetSessionCookieHeader(sessionToken string) ResponseHeader {
-	return SetCookieHeader(sessionCookieName, sessionToken, sessionCookieLifespan)
+	return SetCookieHeader(sessionCookieName, sessionToken, sessionLifespan)
 }
 
 func ClearSessionCookieHeader() ResponseHeader {

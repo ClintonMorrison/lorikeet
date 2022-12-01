@@ -57,8 +57,9 @@ export default class PasswordField extends React.Component {
         <TextField
           label="Password"
           id="password"
-          type={this.state.show ? 'text' : 'password'}
+          type="text" // using "password" causes Chrome to prompt to save the password
           value={value}
+          masked={!this.state.show}
           autoComplete="new-password"
           error={this.props.error}
           onChange={val => this.onChange(val)} />

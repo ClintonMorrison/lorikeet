@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"sync"
 )
@@ -50,7 +49,6 @@ func (s *DocumentService) checkDocumentExists(auth Auth, salt []byte) error {
 }
 
 func (s *DocumentService) authFromSession(context RequestContext) (Auth, error) {
-	fmt.Println("Looking up session " + context.sessionToken)
 	session, err := s.sessionTable.GetSession(context.sessionToken, context.username, context.ip)
 	if err != nil {
 		return Auth{}, ERROR_INVALID_CREDENTIALS
@@ -89,8 +87,6 @@ func (s *DocumentService) createSalt(auth Auth) ([]byte, error) {
 
 func (s *DocumentService) CreateDocument(context RequestContext, document string, recaptchaResponse string) (string, error) {
 	auth := context.ToAuth(context.password)
-
-	fmt.Println("Using password: " + context.password)
 
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
@@ -161,7 +157,6 @@ func (s *DocumentService) UpdateDocument(context RequestContext, document string
 func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 	auth, err := s.authFromSession(context)
 	if err != nil {
-		fmt.Println("Was not able to get auth from session: " + err.Error())
 		return nil, err
 	}
 
@@ -171,7 +166,6 @@ func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 
 	salt, err := s.checkAuth(auth)
 	if err != nil {
-		fmt.Println("Auth does not appear to be valid: " + err.Error())
 		return nil, err
 	}
 

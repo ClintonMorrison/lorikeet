@@ -198,7 +198,9 @@ export default class Passwords extends React.Component {
   render() {
     if (!this.state.document) {
       return (
-        <Loader />
+        <div className="cp-passwords">
+          <Loader />
+        </div>
       );
     }
 

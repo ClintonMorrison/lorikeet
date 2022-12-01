@@ -3,7 +3,6 @@ package server
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -92,19 +91,16 @@ func (st *SessionTable) GetSession(token string, username string, ip string) (*S
 	// Get session from map
 	session, exists := st.sessionByToken[token]
 	if !exists {
-		fmt.Println("session not present")
 		return nil, ERROR_INVALID_CREDENTIALS
 	}
 
 	// Make sure username matches
 	if session.Username != username {
-		fmt.Println("session username mismatch")
 		return nil, ERROR_INVALID_CREDENTIALS
 	}
 
 	// Make sure token matches
 	if session.SessionToken != token {
-		fmt.Println("session token mismatch")
 		return nil, ERROR_INVALID_CREDENTIALS
 	}
 
@@ -124,19 +120,16 @@ func (st *SessionTable) RevokeSession(token string, username string) error {
 	// Get session from map
 	session, exists := st.sessionByToken[token]
 	if !exists {
-		fmt.Println("session not present")
 		return ERROR_INVALID_CREDENTIALS
 	}
 
 	// Make sure username matches
 	if session.Username != username {
-		fmt.Println("session username mismatch")
 		return ERROR_INVALID_CREDENTIALS
 	}
 
 	// Make sure token matches
 	if session.SessionToken != token {
-		fmt.Println("session token mismatch")
 		return ERROR_INVALID_CREDENTIALS
 	}
 
