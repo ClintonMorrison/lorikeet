@@ -21,6 +21,7 @@ export default class Register extends React.Component {
       resetRecaptcha: false,
       passwordValidation: {
         valid: true,
+        sufficientLength: true,
         containsLower: true,
         containsUpper: true,
         containsDigit: true,

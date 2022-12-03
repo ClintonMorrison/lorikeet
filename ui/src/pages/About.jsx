@@ -13,7 +13,7 @@ export default class About extends React.Component {
 
         <p>
           Lorikeet is a personal project created by <a href="https://clintonmorrison.com">Clinton Morrison</a>{' '}
-          and <a href="#TODO">Emma MacDonald</a>.
+          and Emma MacDonald.
 
           It is designed to be a simple and secure online password manager.
           We weren't happy with many password managers out there, so with our love of making cool new things together, we made Lorikeet.
@@ -66,12 +66,12 @@ export default class About extends React.Component {
 
         <h2>Contact</h2>
         <p>
-        If you have feedback, suggestions, or comments, we would love to hear from you.
-        You can send us an email at{' '}
-        <a href="mailto:clintonmorrison2@gmail.com">clintonmorrison2@gmail.com</a>.
-        You can also reach out on <a href="https://twitter.com/clint_morrison">Twitter</a>.
+          If you have feedback, suggestions, or comments, we would love to hear from you.
+          You can send us an email at{' '}
+          <a href="mailto:clintonmorrison2@gmail.com">clintonmorrison2@gmail.com</a>.
+          You can also reach out on <a href="https://twitter.com/clint_morrison">Twitter</a>.
         </p>
-  
+
         <h2>Support Us</h2>
 
         <p>

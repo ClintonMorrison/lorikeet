@@ -1,10 +1,8 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"regexp"
-	"strconv"
 	"sync"
 )
 
@@ -18,11 +16,9 @@ type DocumentService struct {
 	lockMux    sync.RWMutex
 }
 
-var usernameMatchesRegex = regexp.MustCompile(`^[a-zA-Z0-9 @\.\!\-\_\$]+$`).MatchString
+var usernameMatchesRegex = regexp.MustCompile(`^[a-zA-Z0-9 \@\.\!\-\_\$\+]+$`).MatchString
 
 func isUsernameValid(username string) bool {
-	result := strconv.FormatBool(usernameMatchesRegex(username))
-	fmt.Println("Does " + username + " match regex? " + result)
 	return usernameMatchesRegex(username)
 }
 
@@ -31,7 +27,7 @@ func (s *DocumentService) checkUserNameFree(auth Auth) error {
 	s.logError(err)
 
 	if exists {
-		return ERROR_INVALID_USER_NAME
+		return ERROR_ALREADY_EXISTS
 	}
 
 	return nil
@@ -69,8 +65,6 @@ func (s *DocumentService) authFromSession(context RequestContext) (Auth, error) 
 }
 
 func (s *DocumentService) checkAuth(auth Auth) ([]byte, error) {
-	// TODO: validate session here
-
 	salt, err := s.saltForUser(auth)
 	if err != nil {
 		return nil, err
@@ -101,7 +95,7 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 
 	// Validate username
 	if !isUsernameValid(auth.username) {
-		return "", ERROR_INVALID_CREDENTIALS
+		return "", ERROR_USERNAME_INVALID
 	}
 
 	// Validate recaptcha
@@ -115,7 +109,6 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 	userMux.Lock()
 	defer userMux.Unlock()
 
-	// TODO: more validation on username?
 	err := s.checkUserNameFree(auth)
 	if err != nil {
 		return "", err

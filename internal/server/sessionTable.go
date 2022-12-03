@@ -104,10 +104,6 @@ func (st *SessionTable) GetSession(token string, username string, ip string) (*S
 		return nil, ERROR_INVALID_CREDENTIALS
 	}
 
-	if session.Ip != ip {
-		// TODO: consider logging if IP is different
-	}
-
 	return &session, nil
 }
 

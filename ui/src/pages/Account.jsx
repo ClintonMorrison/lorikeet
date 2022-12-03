@@ -19,6 +19,7 @@ export default class Account extends React.Component {
       newPasswordError: "",
       passwordValidation: {
         valid: true,
+        sufficientLength: true,
         containsLower: true,
         containsUpper: true,
         containsDigit: true,

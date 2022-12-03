@@ -11,6 +11,7 @@ const specialChars = [
 
 export function validatePassword(password) {
   const skipValidation = window.location.host === 'dev.lorikeet.ca'; // skip validation for local dev
+  const sufficientLength = password.length >= 8;
   const containsLower = _.some(password, c => c.toLowerCase() === c);
   const containsUpper = _.some(password, c => c.toUpperCase() === c);
   const containsDigit = _.some(password, c => digitsChars.includes(c));
@@ -19,6 +20,7 @@ export function validatePassword(password) {
 
   return {
     valid,
+    sufficientLength,
     containsLower,
     containsUpper,
     containsDigit,
