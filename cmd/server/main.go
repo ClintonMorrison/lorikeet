@@ -24,5 +24,6 @@ func main() {
 		localDev == "1",
 		config.LOG_PATH,
 		config.REQUEST_LOG_PATH,
-		config.ERROR_LOG_PATH)
+		config.ERROR_LOG_PATH,
+		config.DEBUG_LOG_PATH)
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -10,7 +11,8 @@ import (
 // See https://developers.google.com/recaptcha/docs/verify
 
 type RecaptchaClient struct {
-	secret string
+	debugLogger *log.Logger
+	secret      string
 }
 
 type recaptchaValidationResponse struct {
@@ -27,19 +29,24 @@ func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) bool {
 		"remoteip": {ip},
 	}
 
+	rc.debugLogger.Println("validating recaptcha using secret: " + rc.secret)
+
 	resp, err := http.PostForm("https://www.google.com/recaptcha/api/siteverify", data)
 	if err != nil {
+		rc.debugLogger.Println("error from recaptcha post request: " + err.Error())
 		return false
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		rc.debugLogger.Println("error reading recaptcha body: " + err.Error())
 		return false
 	}
 
 	parsedResponse := &recaptchaValidationResponse{}
 	err = json.Unmarshal(body, parsedResponse)
 	if err != nil {
+		rc.debugLogger.Println("error unmarshalling recaptcha body: " + err.Error())
 		return false
 	}
 

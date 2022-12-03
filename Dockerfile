@@ -3,7 +3,8 @@ FROM ubuntu
 RUN \
   apt-get update && \
   apt-get install -y golang-go && \
-  apt-get install -y nginx
+  apt-get install -y nginx && \
+  apt-get install -y ca-certificates
 
 ENV GOPATH /opt/go
 

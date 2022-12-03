@@ -18,7 +18,8 @@ func Run(
 	localDev bool,
 	logPath string,
 	requestLogFilename string,
-	errorLogFilename string) {
+	errorLogFilename string,
+	debugLogFilename string) {
 
 	storage.CreateDirectory(logPath)
 
@@ -34,9 +35,16 @@ func Run(
 		panic(err)
 	}
 
+	// Debug logger
+	debugLogger, err := createLogger(debugLogFilename, "[DEBUG] ")
+	if err != nil {
+		panic(err)
+	}
+
 	cookieHelper := &CookieHelper{localDev}
 	recaptchaClient := &RecaptchaClient{
-		secret: recaptchaSecret,
+		debugLogger: debugLogger,
+		secret:      recaptchaSecret,
 	}
 	repository := &Repository{dataPath}
 	lockoutTable := NewLockoutTable()
