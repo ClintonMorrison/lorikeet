@@ -29,8 +29,6 @@ func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) bool {
 		"remoteip": {ip},
 	}
 
-	rc.debugLogger.Println("validating recaptcha using secret: " + rc.secret)
-
 	resp, err := http.PostForm("https://www.google.com/recaptcha/api/siteverify", data)
 	if err != nil {
 		rc.debugLogger.Println("error from recaptcha post request: " + err.Error())
