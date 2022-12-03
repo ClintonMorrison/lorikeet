@@ -1,5 +1,5 @@
 
-source ./version.sh
+. ./version.sh
 
 docker stop lorikeet
 docker rm lorikeet
