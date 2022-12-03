@@ -1,7 +1,7 @@
 import React from 'react';
 import _ from 'lodash';
 import moment from 'moment';
-import uuid from "uuid/v4";
+import { v4 as uuid } from "uuid";
 import { Helmet } from "react-helmet";
 
 import Collection from "../components/passwords/Collection";

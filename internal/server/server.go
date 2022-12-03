@@ -41,6 +41,10 @@ func Run(
 		panic(err)
 	}
 
+	if localDev {
+		debugLogger.Println("Server running in local dev mode")
+	}
+
 	cookieHelper := &CookieHelper{localDev}
 	recaptchaClient := &RecaptchaClient{
 		debugLogger: debugLogger,
