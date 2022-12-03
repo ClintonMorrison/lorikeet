@@ -23,7 +23,7 @@ func (rc RequestContext) ToAuth(decryptToken string) Auth {
 func ParseBasicContext(r *http.Request) RequestContext {
 	username, password, _ := r.BasicAuth()
 
-	username = strings.ToLower(username)
+	username = strings.TrimSpace(strings.ToLower(username))
 	ip := r.Header.Get("X-Forwarded-For")
 
 	cookies := ParseCookies(r)

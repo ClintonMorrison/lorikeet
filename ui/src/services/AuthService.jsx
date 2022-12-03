@@ -1,6 +1,7 @@
 import sha256 from 'crypto-js/sha256';
 import AES from 'crypto-js/aes';
 import UTF_8 from 'crypto-js/enc-utf8';
+import _ from 'lodash';
 
 const SALT_1 = 'CC352C99A14616AD22678563ECDA5';
 const SALT_2 = '7767B9225CF66B418DD2A39CBC4AA';
@@ -29,7 +30,7 @@ export default class AuthService {
   }
 
   setCredentials({ username, password }) {
-    sessionStorage.setItem('username', username);
+    sessionStorage.setItem('username', _.trim(username));
     this.setPassword(password);
   }
 

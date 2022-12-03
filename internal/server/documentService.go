@@ -1,7 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"log"
+	"regexp"
+	"strconv"
 	"sync"
 )
 
@@ -13,6 +16,14 @@ type DocumentService struct {
 
 	lockByUser map[string]*sync.RWMutex
 	lockMux    sync.RWMutex
+}
+
+var usernameMatchesRegex = regexp.MustCompile(`^[a-zA-Z0-9 @\.\!\-\_\$]+$`).MatchString
+
+func isUsernameValid(username string) bool {
+	result := strconv.FormatBool(usernameMatchesRegex(username))
+	fmt.Println("Does " + username + " match regex? " + result)
+	return usernameMatchesRegex(username)
 }
 
 func (s *DocumentService) checkUserNameFree(auth Auth) error {
@@ -88,6 +99,11 @@ func (s *DocumentService) createSalt(auth Auth) ([]byte, error) {
 func (s *DocumentService) CreateDocument(context RequestContext, document string, recaptchaResponse string) (string, error) {
 	auth := context.ToAuth(context.password)
 
+	// Validate username
+	if !isUsernameValid(auth.username) {
+		return "", ERROR_INVALID_CREDENTIALS
+	}
+
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
 	if !recaptchaValid {
@@ -131,6 +147,12 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 }
 
 func (s *DocumentService) UpdateDocument(context RequestContext, document string) error {
+	// Validate username
+	if !isUsernameValid(context.username) {
+		return ERROR_INVALID_CREDENTIALS
+	}
+
+	// Validate session
 	auth, err := s.authFromSession(context)
 	if err != nil {
 		return err
@@ -155,6 +177,11 @@ func (s *DocumentService) UpdateDocument(context RequestContext, document string
 }
 
 func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
+	// Validate username
+	if !isUsernameValid(context.username) {
+		return nil, ERROR_INVALID_CREDENTIALS
+	}
+
 	auth, err := s.authFromSession(context)
 	if err != nil {
 		return nil, err
@@ -179,6 +206,11 @@ func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 }
 
 func (s *DocumentService) DeleteDocument(context RequestContext) error {
+	// Validate username
+	if !isUsernameValid(context.username) {
+		return ERROR_INVALID_CREDENTIALS
+	}
+
 	auth, err := s.authFromSession(context)
 	if err != nil {
 		return err
@@ -209,6 +241,11 @@ func (s *DocumentService) DeleteDocument(context RequestContext) error {
 }
 
 func (s *DocumentService) UpdateDocumentAndPassword(context RequestContext, newPassword string, document string) (string, error) {
+	// Validate username
+	if !isUsernameValid(context.username) {
+		return "", ERROR_INVALID_CREDENTIALS
+	}
+
 	auth, err := s.authFromSession(context)
 	if err != nil {
 		return "", err
