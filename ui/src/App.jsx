@@ -1,4 +1,5 @@
 import React from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import Footer from './components/Footer';
 import Routes from './Routes';
 
@@ -10,6 +11,8 @@ import SessionService from "./services/SessionService";
 
 import './App.scss';
 import PreferencesService from './services/PreferencesService';
+
+const helmetContext = {}
 
 // Instantiate services
 const authService = new AuthService();
@@ -58,8 +61,10 @@ export default class App extends React.Component {
   render() {
     return (
       <div className={`cp-app ${this.state.darkMode ? 'dark-mode' : ''}`}>
-        <Routes services={services} />
-        <Footer />
+        <HelmetProvider context={helmetContext}>
+          <Routes services={services} />
+          <Footer />
+        </HelmetProvider>
       </div>
     );
   }
