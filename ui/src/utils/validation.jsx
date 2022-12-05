@@ -16,7 +16,7 @@ export function validatePassword(password) {
   const containsUpper = _.some(password, c => c.toUpperCase() === c);
   const containsDigit = _.some(password, c => digitsChars.includes(c));
   const containsSpecial = _.some(password, c => specialChars.includes(c));
-  const valid = skipValidation || (containsLower && containsUpper && containsDigit && containsSpecial);
+  const valid = skipValidation || (containsLower && containsUpper && containsDigit && containsSpecial && sufficientLength);
 
   return {
     valid,
