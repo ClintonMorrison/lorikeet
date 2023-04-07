@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/ClintonMorrison/lorikeet/internal/model"
+	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 )
 
-func ParseCookies(request *http.Request) map[string]string {
+func parseCookies(request *http.Request) map[string]string {
 	result := make(map[string]string, 0)
 	if request == nil {
 		return result
@@ -36,18 +37,13 @@ func ParseCookies(request *http.Request) map[string]string {
 	return result
 }
 
-func GetSessionToken(request *http.Request) string {
-	cookies := ParseCookies(request)
-	return cookies[sessionCookieName]
-}
-
 type CookieHelper struct {
 	localDev bool
 }
 
 const sessionCookieName = "session"
 
-func (ch *CookieHelper) SetCookieHeader(name string, value string, lifespan time.Duration) ResponseHeader {
+func (ch *CookieHelper) setCookieHeader(name string, value string, lifespan time.Duration) ResponseHeader {
 	maxAge := int(lifespan.Seconds())
 
 	parts := make([]string, 0)
@@ -68,11 +64,11 @@ func (ch *CookieHelper) SetCookieHeader(name string, value string, lifespan time
 }
 
 func (ch *CookieHelper) SetSessionCookieHeader(sessionToken string) ResponseHeader {
-	return ch.SetCookieHeader(sessionCookieName, sessionToken, sessionLifespan)
+	return ch.setCookieHeader(sessionCookieName, sessionToken, session.Lifespan)
 }
 
 func (ch *CookieHelper) ClearSessionCookieHeader() ResponseHeader {
-	return ch.SetCookieHeader(sessionCookieName, "", 0)
+	return ch.setCookieHeader(sessionCookieName, "", 0)
 }
 
 func ParseBasicContext(r *http.Request) model.RequestContext {
@@ -81,8 +77,8 @@ func ParseBasicContext(r *http.Request) model.RequestContext {
 	username = strings.TrimSpace(strings.ToLower(username))
 	ip := r.Header.Get("X-Forwarded-For")
 
-	cookies := ParseCookies(r)
+	cookies := parseCookies(r)
 	sesionToken := cookies["session"]
 
-	return model.RequestContext{username, ip, password, sesionToken}
+	return model.RequestContext{Username: username, Ip: ip, Password: password, SessionToken: sesionToken}
 }

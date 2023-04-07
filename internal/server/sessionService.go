@@ -3,14 +3,16 @@ package server
 import (
 	"log"
 
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
+	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 )
 
 type SessionService struct {
 	recaptchaClient *recaptcha.Client
 	documentService *DocumentService
-	sessionTable    *SessionTable
+	sessionTable    *session.Table
 	errorLogger     *log.Logger
 }
 
@@ -20,14 +22,14 @@ func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string)
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha in grant session request was not valid")
-		return "", ERROR_INVALID_CREDENTIALS
+		return "", errors.INVALID_CREDENTIALS
 	}
 
 	// Validate auth
 	_, err := s.documentService.checkAuth(auth)
 	if err != nil {
 		s.errorLogger.Println("Auth in grant session request was not valid")
-		return "", ERROR_INVALID_CREDENTIALS
+		return "", errors.INVALID_CREDENTIALS
 	}
 
 	// Grant session (proves user passed recaptcha with valid auth)

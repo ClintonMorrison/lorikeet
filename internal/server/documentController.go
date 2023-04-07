@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 )
 
@@ -117,7 +118,7 @@ func parseDocumentRequestBody(body []byte) (*DocumentRequest, error) {
 	documentRequest := &DocumentRequest{}
 	err := json.Unmarshal(body, documentRequest)
 	if err != nil {
-		return nil, ERROR_BAD_REQUEST
+		return nil, errors.BAD_REQUEST
 	}
 
 	return documentRequest, nil
@@ -126,7 +127,7 @@ func parseDocumentRequestBody(body []byte) (*DocumentRequest, error) {
 func marshalResponse(response DocumentResponse) ([]byte, error) {
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		return emptyBody, ERROR_SERVER_ERROR
+		return emptyBody, errors.SERVER_ERROR
 	}
 	return jsonResponse, nil
 }

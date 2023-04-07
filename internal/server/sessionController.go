@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 )
@@ -67,7 +68,7 @@ func parseSessionRequestBody(body []byte) (*SessionRequest, error) {
 	sessionRequest := &SessionRequest{}
 	err := json.Unmarshal(body, sessionRequest)
 	if err != nil {
-		return nil, ERROR_BAD_REQUEST
+		return nil, errors.BAD_REQUEST
 	}
 
 	return sessionRequest, nil

@@ -1,14 +1,16 @@
-package server
+package session
 
 import (
 	"crypto/rand"
 	"encoding/base64"
 	"sync"
 	"time"
+
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 )
 
 // how long session is valid
-const sessionLifespan = time.Hour * 24
+const Lifespan = time.Hour * 24
 
 type Session struct {
 	SessionToken string
@@ -19,9 +21,14 @@ type Session struct {
 	ExpiresAt    time.Time
 }
 
-type SessionTable struct {
+type Table struct {
 	sessionByToken map[string]Session
 	mux            sync.RWMutex
+}
+
+func NewTable() *Table {
+	return &Table{
+		sessionByToken: make(map[string]Session, 0)}
 }
 
 func generateToken(n int) (string, error) {
@@ -35,12 +42,7 @@ func generateToken(n int) (string, error) {
 	return base64.URLEncoding.EncodeToString(bytes), err
 }
 
-func NewSessionTable() *SessionTable {
-	return &SessionTable{
-		sessionByToken: make(map[string]Session, 0)}
-}
-
-func (st *SessionTable) Grant(username string, ip string, decryptToken string) (*Session, error) {
+func (st *Table) Grant(username string, ip string, decryptToken string) (*Session, error) {
 	st.mux.Lock()
 	defer st.mux.Unlock()
 
@@ -49,13 +51,13 @@ func (st *SessionTable) Grant(username string, ip string, decryptToken string) (
 	// Generate new token
 	token, err := generateToken(256)
 	if err != nil {
-		return nil, ERROR_SERVER_ERROR
+		return nil, errors.SERVER_ERROR
 	}
 
 	// Make sure it doesn't match an existing session
 	_, alreadyExists := st.sessionByToken[token]
 	if alreadyExists {
-		return nil, ERROR_SERVER_ERROR
+		return nil, errors.SERVER_ERROR
 	}
 
 	session := Session{
@@ -64,7 +66,7 @@ func (st *SessionTable) Grant(username string, ip string, decryptToken string) (
 		Username:     username,
 		Ip:           ip,
 		IssuedAt:     time.Now(),
-		ExpiresAt:    time.Now().Add(sessionLifespan),
+		ExpiresAt:    time.Now().Add(Lifespan),
 	}
 
 	// Add session to table
@@ -73,7 +75,7 @@ func (st *SessionTable) Grant(username string, ip string, decryptToken string) (
 	return &session, nil
 }
 
-func (st *SessionTable) IsValid(token string, username string, ip string) bool {
+func (st *Table) IsValid(token string, username string, ip string) bool {
 	session, err := st.GetSession(token, username, ip)
 	if err != nil {
 		return false
@@ -82,7 +84,7 @@ func (st *SessionTable) IsValid(token string, username string, ip string) bool {
 	return session.SessionToken == token
 }
 
-func (st *SessionTable) GetSession(token string, username string, ip string) (*Session, error) {
+func (st *Table) GetSession(token string, username string, ip string) (*Session, error) {
 	st.mux.Lock()
 	defer st.mux.Unlock()
 
@@ -91,23 +93,23 @@ func (st *SessionTable) GetSession(token string, username string, ip string) (*S
 	// Get session from map
 	session, exists := st.sessionByToken[token]
 	if !exists {
-		return nil, ERROR_INVALID_CREDENTIALS
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
 	// Make sure username matches
 	if session.Username != username {
-		return nil, ERROR_INVALID_CREDENTIALS
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
 	// Make sure token matches
 	if session.SessionToken != token {
-		return nil, ERROR_INVALID_CREDENTIALS
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
 	return &session, nil
 }
 
-func (st *SessionTable) RevokeSession(token string, username string) error {
+func (st *Table) RevokeSession(token string, username string) error {
 	st.mux.Lock()
 	defer st.mux.Unlock()
 
@@ -116,17 +118,17 @@ func (st *SessionTable) RevokeSession(token string, username string) error {
 	// Get session from map
 	session, exists := st.sessionByToken[token]
 	if !exists {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	// Make sure username matches
 	if session.Username != username {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	// Make sure token matches
 	if session.SessionToken != token {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	// Remove the session
@@ -135,7 +137,7 @@ func (st *SessionTable) RevokeSession(token string, username string) error {
 	return nil
 }
 
-func (st *SessionTable) purgeExpiredSessions() {
+func (st *Table) purgeExpiredSessions() {
 	now := time.Now()
 
 	for token, session := range st.sessionByToken {

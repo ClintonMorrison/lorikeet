@@ -5,15 +5,17 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
+	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 )
 
 type DocumentService struct {
 	repo            *repository.V1
 	recaptchaClient *recaptcha.Client
-	sessionTable    *SessionTable
+	sessionTable    *session.Table
 	errorLogger     *log.Logger
 
 	lockByUser map[string]*sync.RWMutex
@@ -31,7 +33,7 @@ func (s *DocumentService) checkUserNameFree(auth model.Auth) error {
 	s.logError(err)
 
 	if exists {
-		return ERROR_ALREADY_EXISTS
+		return errors.ALREADY_EXISTS
 	}
 
 	return nil
@@ -42,7 +44,7 @@ func (s *DocumentService) saltForUser(auth model.Auth) ([]byte, error) {
 
 	if err != nil {
 		s.logError(err)
-		return nil, ERROR_INVALID_CREDENTIALS
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
 	return salt, nil
@@ -53,7 +55,7 @@ func (s *DocumentService) checkDocumentExists(auth model.Auth, salt []byte) erro
 	s.logError(err)
 
 	if !exists {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	return nil
@@ -62,7 +64,7 @@ func (s *DocumentService) checkDocumentExists(auth model.Auth, salt []byte) erro
 func (s *DocumentService) authFromSession(context model.RequestContext) (model.Auth, error) {
 	session, err := s.sessionTable.GetSession(context.SessionToken, context.Username, context.Ip)
 	if err != nil {
-		return model.Auth{}, ERROR_INVALID_CREDENTIALS
+		return model.Auth{}, errors.INVALID_CREDENTIALS
 	}
 
 	return context.ToAuth(session.DecryptToken), nil
@@ -88,7 +90,7 @@ func (s *DocumentService) createSalt(auth model.Auth) ([]byte, error) {
 
 	if err != nil {
 		s.logError(err)
-		return nil, ERROR_SERVER_ERROR
+		return nil, errors.SERVER_ERROR
 	}
 
 	return salt, nil
@@ -99,14 +101,14 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 
 	// Validate username
 	if !isUsernameValid(auth.Username) {
-		return "", ERROR_USERNAME_INVALID
+		return "", errors.USERNAME_INVALID
 	}
 
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha was not valid")
-		return "", ERROR_INVALID_CREDENTIALS
+		return "", errors.INVALID_CREDENTIALS
 	}
 
 	userMux := s.getLockForUser(auth.Username)
@@ -126,7 +128,7 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 	err = s.repo.WriteDocument([]byte(document), auth, salt)
 	if err != nil {
 		s.logError(err)
-		return "", ERROR_SERVER_ERROR
+		return "", errors.SERVER_ERROR
 	}
 
 	// Grant session for new user
@@ -137,7 +139,7 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 	}
 	if err != nil {
 		s.logError(err)
-		return "", ERROR_SERVER_ERROR
+		return "", errors.SERVER_ERROR
 	}
 
 	return session.SessionToken, nil
@@ -146,7 +148,7 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 func (s *DocumentService) UpdateDocument(context model.RequestContext, document string) error {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	// Validate session
@@ -167,7 +169,7 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 	err = s.repo.WriteDocument([]byte(document), auth, salt)
 	if err != nil {
 		s.logError(err)
-		return ERROR_SERVER_ERROR
+		return errors.SERVER_ERROR
 	}
 
 	return nil
@@ -176,7 +178,7 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, error) {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return nil, ERROR_INVALID_CREDENTIALS
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
 	auth, err := s.authFromSession(context)
@@ -196,7 +198,7 @@ func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, err
 	document, err := s.repo.ReadDocument(auth, salt)
 	if err != nil {
 		s.logError(err)
-		return nil, ERROR_SERVER_ERROR
+		return nil, errors.SERVER_ERROR
 	}
 
 	return document, nil
@@ -205,7 +207,7 @@ func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, err
 func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return ERROR_INVALID_CREDENTIALS
+		return errors.INVALID_CREDENTIALS
 	}
 
 	auth, err := s.authFromSession(context)
@@ -225,13 +227,13 @@ func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 	err = s.repo.DeleteDocument(auth, salt)
 	if err != nil {
 		s.logError(err)
-		return ERROR_SERVER_ERROR
+		return errors.SERVER_ERROR
 	}
 
 	err = s.repo.DeleteSaltFile(auth)
 	if err != nil {
 		s.logError(err)
-		return ERROR_SERVER_ERROR
+		return errors.SERVER_ERROR
 	}
 
 	return nil
@@ -240,7 +242,7 @@ func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext, newPassword string, document string) (string, error) {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return "", ERROR_INVALID_CREDENTIALS
+		return "", errors.INVALID_CREDENTIALS
 	}
 
 	auth, err := s.authFromSession(context)
@@ -262,17 +264,17 @@ func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext
 		return "", err
 	}
 
-	newAuth := model.Auth{auth.Username, string(newPassword), auth.Ip}
+	newAuth := model.Auth{Username: auth.Username, Password: string(newPassword), Ip: auth.Ip}
 	err = s.repo.MoveDocument(auth, salt, newAuth)
 	if err != nil {
 		s.logError(err)
-		return "", ERROR_SERVER_ERROR
+		return "", errors.SERVER_ERROR
 	}
 
 	err = s.repo.WriteDocument([]byte(document), newAuth, salt)
 	if err != nil {
 		s.logError(err)
-		return "", ERROR_SERVER_ERROR
+		return "", errors.SERVER_ERROR
 	}
 
 	// Grant session for new user
@@ -283,7 +285,7 @@ func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext
 	}
 	if err != nil {
 		s.logError(err)
-		return "", ERROR_SERVER_ERROR
+		return "", errors.SERVER_ERROR
 	}
 
 	return session.SessionToken, nil

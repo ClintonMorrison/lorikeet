@@ -1,21 +1,10 @@
 package server
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-type TypedError string
-
-const (
-	ERROR_BAD_REQUEST         TypedError = "BAD_REQUEST"
-	ERROR_ALREADY_EXISTS      TypedError = "ERROR_ALREADY_EXISTS"
-	ERROR_SERVER_ERROR        TypedError = "SERVER_ERROR"
-	ERROR_INVALID_CREDENTIALS TypedError = "INVALID_CREDENTIALS"
-	ERROR_USERNAME_INVALID    TypedError = "INVALID_USERNAME"
-	ERROR_TOO_MANY_REQUESTS   TypedError = "TOO_MANY_REQUESTS"
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 )
-
-func (t TypedError) Error() string {
-	return string(t)
-}
 
 func NewErrorResponse(code int, msg string) ApiResponse {
 	var body, _ = json.Marshal(ErrorBody{msg})
@@ -28,21 +17,21 @@ var usernameTakenResponse = NewErrorResponse(400, "Username already taken.")
 var unauthorizedResponse = NewErrorResponse(401, "Invalid username or password.")
 var usernameInvalidResponse = NewErrorResponse(422, "Username can only contain letters, numbers, or certain symbols (. @ ! $ + - _)")
 var tooManyRequestsResponse = NewErrorResponse(429, "Too many failed attempts. Try again in a few hours.")
-var serverErrorResponse = NewErrorResponse(500, "Server error. Please try again later.")
+var serverErrorResponse = NewErrorResponse(500, "Server errors. Please try again later.")
 
 func responseForError(err error) ApiResponse {
 	switch err {
-	case ERROR_BAD_REQUEST:
+	case errors.BAD_REQUEST:
 		return badRequestResponse
-	case ERROR_ALREADY_EXISTS:
+	case errors.ALREADY_EXISTS:
 		return usernameTakenResponse
-	case ERROR_INVALID_CREDENTIALS:
+	case errors.INVALID_CREDENTIALS:
 		return unauthorizedResponse
-	case ERROR_USERNAME_INVALID:
+	case errors.USERNAME_INVALID:
 		return usernameInvalidResponse
-	case ERROR_TOO_MANY_REQUESTS:
+	case errors.TOO_MANY_REQUESTS:
 		return tooManyRequestsResponse
-	case ERROR_SERVER_ERROR:
+	case errors.SERVER_ERROR:
 	default:
 		return serverErrorResponse
 	}
