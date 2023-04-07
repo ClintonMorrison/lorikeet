@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"log"
@@ -14,6 +14,21 @@ type SessionService struct {
 	documentService *DocumentService
 	sessionTable    *session.Table
 	errorLogger     *log.Logger
+}
+
+func NewSessionService(
+	recaptchaClient *recaptcha.Client,
+	documentService *DocumentService,
+	sessionTable *session.Table,
+	errorLogger *log.Logger,
+
+) *SessionService {
+	return &SessionService{
+		recaptchaClient,
+		documentService,
+		sessionTable,
+		errorLogger,
+	}
 }
 
 // GrantSession returns a new session token, or an error

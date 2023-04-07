@@ -3,11 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"sync"
 
+	"github.com/ClintonMorrison/lorikeet/internal/server/controller"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
+	"github.com/ClintonMorrison/lorikeet/internal/server/service"
 	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 	"github.com/ClintonMorrison/lorikeet/internal/utils"
@@ -50,7 +51,7 @@ func Run(
 		debugLogger.Println("Server running in local dev mode")
 	}
 
-	cookieHelper := &CookieHelper{localDev}
+	cookieHelper := controller.NewCookieHelper(localDev)
 	recaptchaClient := recaptcha.NewClient(
 		debugLogger,
 		recaptchaSecret,
@@ -58,26 +59,25 @@ func Run(
 	repository := repository.NewRepositoryV1(dataPath)
 	lockoutTable := lockout.NewTable()
 	sessionTable := session.NewTable()
-	documentService := &DocumentService{
-		repo:            repository,
-		recaptchaClient: recaptchaClient,
-		sessionTable:    sessionTable,
-		errorLogger:     errorLogger,
-		lockByUser:      make(map[string]*sync.RWMutex),
-	}
-	sessionService := &SessionService{
-		recaptchaClient: recaptchaClient,
-		documentService: documentService,
-		sessionTable:    sessionTable,
-		errorLogger:     errorLogger,
-	}
+	documentService := service.NewDocumentService(
+		repository,
+		recaptchaClient,
+		sessionTable,
+		errorLogger,
+	)
+	sessionService := service.NewSessionService(
+		recaptchaClient,
+		documentService,
+		sessionTable,
+		errorLogger,
+	)
 
 	repository.CreateDataDirectory()
 
-	documentController := NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
+	documentController := controller.NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
 	http.HandleFunc(documentApiPath, documentController.Handle)
 
-	sessionController := NewSessionController(cookieHelper, sessionService, lockoutTable, requestLogger)
+	sessionController := controller.NewSessionController(cookieHelper, sessionService, lockoutTable, requestLogger)
 	http.HandleFunc(sessionApiPath, sessionController.Handle)
 
 	fmt.Printf("Listening on http://localhost%s\n", address)

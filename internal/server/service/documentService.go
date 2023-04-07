@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"log"
@@ -20,6 +20,21 @@ type DocumentService struct {
 
 	lockByUser map[string]*sync.RWMutex
 	lockMux    sync.RWMutex
+}
+
+func NewDocumentService(
+	repository *repository.V1,
+	recaptchaClient *recaptcha.Client,
+	sessionTable *session.Table,
+	errorLogger *log.Logger,
+) *DocumentService {
+	return &DocumentService{
+		repo:            repository,
+		recaptchaClient: recaptchaClient,
+		sessionTable:    sessionTable,
+		errorLogger:     errorLogger,
+		lockByUser:      make(map[string]*sync.RWMutex),
+	}
 }
 
 var usernameMatchesRegex = regexp.MustCompile(`^[a-zA-Z0-9 \@\.\!\-\_\$\+]+$`).MatchString

@@ -1,4 +1,4 @@
-package server
+package controller
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
+	"github.com/ClintonMorrison/lorikeet/internal/server/service"
 )
 
 type DocumentResponse struct {
@@ -25,7 +26,7 @@ type DocumentRequest struct {
 
 func NewDocumentController(
 	cookieHelper *CookieHelper,
-	service *DocumentService,
+	service *service.DocumentService,
 	lockoutTable *lockout.Table,
 	requestLogger *log.Logger) RestController {
 	// GET /document

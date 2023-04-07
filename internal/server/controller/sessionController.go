@@ -1,4 +1,4 @@
-package server
+package controller
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
+	"github.com/ClintonMorrison/lorikeet/internal/server/service"
 )
 
 type SessionRequest struct {
@@ -16,7 +17,7 @@ type SessionRequest struct {
 
 func NewSessionController(
 	cookieHelper *CookieHelper,
-	service *SessionService,
+	service *service.SessionService,
 	lockoutTable *lockout.Table,
 	requestLogger *log.Logger) RestController {
 	// POST /session
