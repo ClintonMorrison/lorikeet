@@ -1,15 +1,15 @@
-package server
+package utils
 
 import (
-"crypto/aes"
-"crypto/cipher"
-"crypto/sha256"
-"crypto/rand"
-"encoding/hex"
-"io"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 )
 
-func makeSalt() ([]byte, error) {
+func MakeSalt() ([]byte, error) {
 	salt := make([]byte, 64)
 	_, err := io.ReadFull(rand.Reader, salt)
 	if err != nil {
@@ -19,13 +19,13 @@ func makeSalt() ([]byte, error) {
 	return salt, nil
 }
 
-func hash(data []byte) string {
+func Hash(data []byte) string {
 	hasher := sha256.New()
 	hasher.Write(data)
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func encrypt(data []byte, hashedPassword []byte) ([]byte, error) {
+func Encrypt(data []byte, hashedPassword []byte) ([]byte, error) {
 	block, err := aes.NewCipher(hashedPassword[:32])
 	if err != nil {
 		panic(err)
@@ -45,7 +45,7 @@ func encrypt(data []byte, hashedPassword []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func decrypt(data []byte, hashedPassword []byte) []byte {
+func Decrypt(data []byte, hashedPassword []byte) []byte {
 	key := []byte(hashedPassword)[:32]
 	block, err := aes.NewCipher(key)
 	if err != nil {

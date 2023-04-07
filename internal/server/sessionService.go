@@ -2,6 +2,8 @@ package server
 
 import (
 	"log"
+
+	"github.com/ClintonMorrison/lorikeet/internal/model"
 )
 
 type SessionService struct {
@@ -12,9 +14,9 @@ type SessionService struct {
 }
 
 // GrantSession returns a new session token, or an error
-func (s *SessionService) GrantSession(auth Auth, recaptchaResponse string) (string, error) {
+func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string) (string, error) {
 	// Validate recaptcha
-	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
+	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha in grant session request was not valid")
 		return "", ERROR_INVALID_CREDENTIALS
@@ -28,7 +30,7 @@ func (s *SessionService) GrantSession(auth Auth, recaptchaResponse string) (stri
 	}
 
 	// Grant session (proves user passed recaptcha with valid auth)
-	session, err := s.sessionTable.Grant(auth.username, auth.ip, auth.password)
+	session, err := s.sessionTable.Grant(auth.Username, auth.Ip, auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
 		return "", err

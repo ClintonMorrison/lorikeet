@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 	"strings"
+
+	"github.com/ClintonMorrison/lorikeet/internal/model"
 )
 
 type RequestContext struct {
@@ -12,11 +14,11 @@ type RequestContext struct {
 	sessionToken string
 }
 
-func (rc RequestContext) ToAuth(decryptToken string) Auth {
-	return Auth{
-		username: rc.username,
-		password: decryptToken,
-		ip:       rc.ip,
+func (rc RequestContext) ToAuth(decryptToken string) model.Auth {
+	return model.Auth{
+		Username: rc.username,
+		Password: decryptToken,
+		Ip:       rc.ip,
 	}
 }
 

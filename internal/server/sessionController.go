@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"log"
+
+	"github.com/ClintonMorrison/lorikeet/internal/model"
 )
 
 type SessionRequest struct {
@@ -18,10 +20,10 @@ func NewSessionController(cookieHelper *CookieHelper, service *SessionService, l
 			return badRequestResponse
 		}
 
-		auth := Auth{
-			username: request.Context.username,
-			password: sessionRequest.DecryptToken,
-			ip:       request.Context.ip,
+		auth := model.Auth{
+			Username: request.Context.username,
+			Password: sessionRequest.DecryptToken,
+			Ip:       request.Context.ip,
 		}
 
 		token, err := service.GrantSession(auth, sessionRequest.RecaptchaResult)

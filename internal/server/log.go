@@ -1,13 +1,13 @@
 package server
 
 import (
+	"io"
 	"log"
 	"os"
-	"io"
 )
 
 func createLogger(filename string, prefix string) (*log.Logger, error) {
-	file, err := os.OpenFile(filename, os.O_CREATE | os.O_APPEND | os.O_RDWR, 0700)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0700)
 	if err != nil && !os.IsExist(err) {
 		return nil, err
 	}

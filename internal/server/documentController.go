@@ -20,7 +20,11 @@ type DocumentRequest struct {
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
-func NewDocumentController(cookieHelper *CookieHelper, service *DocumentService, lockoutTable *LockoutTable, requestLogger *log.Logger) RestController {
+func NewDocumentController(
+	cookieHelper *CookieHelper,
+	service *DocumentService,
+	lockoutTable *LockoutTable,
+	requestLogger *log.Logger) RestController {
 	// GET /document
 	var get MethodHandler = func(request ApiRequest) ApiResponse {
 		document, err := service.GetDocument(request.Context)

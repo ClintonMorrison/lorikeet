@@ -4,10 +4,13 @@ import (
 	"log"
 	"regexp"
 	"sync"
+
+	"github.com/ClintonMorrison/lorikeet/internal/model"
+	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 )
 
 type DocumentService struct {
-	repo            *Repository
+	repo            *repository.V1
 	recaptchaClient *RecaptchaClient
 	sessionTable    *SessionTable
 	errorLogger     *log.Logger
@@ -22,8 +25,8 @@ func isUsernameValid(username string) bool {
 	return usernameMatchesRegex(username)
 }
 
-func (s *DocumentService) checkUserNameFree(auth Auth) error {
-	exists, err := s.repo.saltFileExists(auth)
+func (s *DocumentService) checkUserNameFree(auth model.Auth) error {
+	exists, err := s.repo.SaltFileExists(auth)
 	s.logError(err)
 
 	if exists {
@@ -33,8 +36,8 @@ func (s *DocumentService) checkUserNameFree(auth Auth) error {
 	return nil
 }
 
-func (s *DocumentService) saltForUser(auth Auth) ([]byte, error) {
-	salt, err := s.repo.readSaltFile(auth)
+func (s *DocumentService) saltForUser(auth model.Auth) ([]byte, error) {
+	salt, err := s.repo.ReadSaltFile(auth)
 
 	if err != nil {
 		s.logError(err)
@@ -44,8 +47,8 @@ func (s *DocumentService) saltForUser(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (s *DocumentService) checkDocumentExists(auth Auth, salt []byte) error {
-	exists, err := s.repo.documentExists(auth, salt)
+func (s *DocumentService) checkDocumentExists(auth model.Auth, salt []byte) error {
+	exists, err := s.repo.DocumentExists(auth, salt)
 	s.logError(err)
 
 	if !exists {
@@ -55,16 +58,16 @@ func (s *DocumentService) checkDocumentExists(auth Auth, salt []byte) error {
 	return nil
 }
 
-func (s *DocumentService) authFromSession(context RequestContext) (Auth, error) {
+func (s *DocumentService) authFromSession(context RequestContext) (model.Auth, error) {
 	session, err := s.sessionTable.GetSession(context.sessionToken, context.username, context.ip)
 	if err != nil {
-		return Auth{}, ERROR_INVALID_CREDENTIALS
+		return model.Auth{}, ERROR_INVALID_CREDENTIALS
 	}
 
 	return context.ToAuth(session.DecryptToken), nil
 }
 
-func (s *DocumentService) checkAuth(auth Auth) ([]byte, error) {
+func (s *DocumentService) checkAuth(auth model.Auth) ([]byte, error) {
 	salt, err := s.saltForUser(auth)
 	if err != nil {
 		return nil, err
@@ -78,8 +81,8 @@ func (s *DocumentService) checkAuth(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (s *DocumentService) createSalt(auth Auth) ([]byte, error) {
-	salt, err := s.repo.writeSaltFile(auth)
+func (s *DocumentService) createSalt(auth model.Auth) ([]byte, error) {
+	salt, err := s.repo.WriteSaltFile(auth)
 	s.logError(err)
 
 	if err != nil {
@@ -94,18 +97,18 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 	auth := context.ToAuth(context.password)
 
 	// Validate username
-	if !isUsernameValid(auth.username) {
+	if !isUsernameValid(auth.Username) {
 		return "", ERROR_USERNAME_INVALID
 	}
 
 	// Validate recaptcha
-	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.ip)
+	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha was not valid")
 		return "", ERROR_INVALID_CREDENTIALS
 	}
 
-	userMux := s.getLockForUser(auth.username)
+	userMux := s.getLockForUser(auth.Username)
 	userMux.Lock()
 	defer userMux.Unlock()
 
@@ -119,14 +122,14 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 		return "", err
 	}
 
-	err = s.repo.writeDocument([]byte(document), auth, salt)
+	err = s.repo.WriteDocument([]byte(document), auth, salt)
 	if err != nil {
 		s.logError(err)
 		return "", ERROR_SERVER_ERROR
 	}
 
 	// Grant session for new user
-	session, err := s.sessionTable.Grant(auth.username, auth.ip, auth.password)
+	session, err := s.sessionTable.Grant(auth.Username, auth.Ip, auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
 		return "", err
@@ -151,7 +154,7 @@ func (s *DocumentService) UpdateDocument(context RequestContext, document string
 		return err
 	}
 
-	userMux := s.getLockForUser(auth.username)
+	userMux := s.getLockForUser(auth.Username)
 	userMux.Lock()
 	defer userMux.Unlock()
 
@@ -160,7 +163,7 @@ func (s *DocumentService) UpdateDocument(context RequestContext, document string
 		return err
 	}
 
-	err = s.repo.writeDocument([]byte(document), auth, salt)
+	err = s.repo.WriteDocument([]byte(document), auth, salt)
 	if err != nil {
 		s.logError(err)
 		return ERROR_SERVER_ERROR
@@ -180,7 +183,7 @@ func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 		return nil, err
 	}
 
-	userMux := s.getLockForUser(auth.username)
+	userMux := s.getLockForUser(auth.Username)
 	userMux.RLock()
 	defer userMux.RUnlock()
 
@@ -189,7 +192,7 @@ func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 		return nil, err
 	}
 
-	document, err := s.repo.readDocument(auth, salt)
+	document, err := s.repo.ReadDocument(auth, salt)
 	if err != nil {
 		s.logError(err)
 		return nil, ERROR_SERVER_ERROR
@@ -209,7 +212,7 @@ func (s *DocumentService) DeleteDocument(context RequestContext) error {
 		return err
 	}
 
-	userMux := s.getLockForUser(auth.username)
+	userMux := s.getLockForUser(auth.Username)
 	userMux.Lock()
 	defer userMux.Unlock()
 
@@ -218,13 +221,13 @@ func (s *DocumentService) DeleteDocument(context RequestContext) error {
 		return err
 	}
 
-	err = s.repo.deleteDocument(auth, salt)
+	err = s.repo.DeleteDocument(auth, salt)
 	if err != nil {
 		s.logError(err)
 		return ERROR_SERVER_ERROR
 	}
 
-	err = s.repo.deleteSaltFile(auth)
+	err = s.repo.DeleteSaltFile(auth)
 	if err != nil {
 		s.logError(err)
 		return ERROR_SERVER_ERROR
@@ -244,7 +247,7 @@ func (s *DocumentService) UpdateDocumentAndPassword(context RequestContext, newP
 		return "", err
 	}
 
-	userMux := s.getLockForUser(auth.username)
+	userMux := s.getLockForUser(auth.Username)
 	userMux.Lock()
 	defer userMux.Unlock()
 
@@ -258,21 +261,21 @@ func (s *DocumentService) UpdateDocumentAndPassword(context RequestContext, newP
 		return "", err
 	}
 
-	newAuth := Auth{auth.username, string(newPassword), auth.ip}
-	err = s.repo.moveDocument(auth, salt, newAuth)
+	newAuth := model.Auth{auth.Username, string(newPassword), auth.Ip}
+	err = s.repo.MoveDocument(auth, salt, newAuth)
 	if err != nil {
 		s.logError(err)
 		return "", ERROR_SERVER_ERROR
 	}
 
-	err = s.repo.writeDocument([]byte(document), newAuth, salt)
+	err = s.repo.WriteDocument([]byte(document), newAuth, salt)
 	if err != nil {
 		s.logError(err)
 		return "", ERROR_SERVER_ERROR
 	}
 
 	// Grant session for new user
-	session, err := s.sessionTable.Grant(newAuth.username, newAuth.ip, newAuth.password)
+	session, err := s.sessionTable.Grant(newAuth.Username, newAuth.Ip, newAuth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
 		return "", err

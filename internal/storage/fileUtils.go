@@ -25,4 +25,3 @@ func CreateDirectory(directoryName string) error {
 
 	return err
 }
-

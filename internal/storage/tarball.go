@@ -1,14 +1,14 @@
 package storage
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"errors"
 	"fmt"
-	"archive/tar"
 	"io"
-	"os"
-	"compress/gzip"
-	"path/filepath"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 )
 

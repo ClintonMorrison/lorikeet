@@ -1,18 +1,24 @@
-package server
+package repository
 
 import (
 	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
+	"github.com/ClintonMorrison/lorikeet/internal/utils"
 )
 
-type Repository struct {
+type V1 struct {
 	dataPath string
 }
 
-func (r *Repository) createDataDirectory() {
+func NewRepositoryV1(dataPath string) *V1 {
+	return &V1{dataPath}
+}
+
+func (r *V1) CreateDataDirectory() {
 	err := storage.CreateDirectory(r.dataPath)
 
 	if err != nil {
@@ -20,7 +26,7 @@ func (r *Repository) createDataDirectory() {
 	}
 }
 
-func (r *Repository) pathForDocument(auth Auth, salt []byte) (string, error) {
+func (r *V1) pathForDocument(auth model.Auth, salt []byte) (string, error) {
 	signature, err := auth.Signature(salt)
 	if err != nil {
 		return "", err
@@ -29,22 +35,22 @@ func (r *Repository) pathForDocument(auth Auth, salt []byte) (string, error) {
 	return fmt.Sprintf("%s/%s.txt", r.dataPath, signature), nil
 }
 
-func (r *Repository) pathForSalt(auth Auth) string {
-	return fmt.Sprintf("%s/%s.salt.txt", r.dataPath, auth.username)
+func (r *V1) pathForSalt(auth model.Auth) string {
+	return fmt.Sprintf("%s/%s.salt.txt", r.dataPath, auth.Username)
 }
 
 //
 // Salt Files
 //
-func (r *Repository) saltFileExists(auth Auth) (bool, error) {
+func (r *V1) SaltFileExists(auth model.Auth) (bool, error) {
 	filename := r.pathForSalt(auth)
 	return storage.FileExists(filename)
 }
 
-func (r *Repository) writeSaltFile(auth Auth) ([]byte, error) {
+func (r *V1) WriteSaltFile(auth model.Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 
-	salt, err := makeSalt()
+	salt, err := utils.MakeSalt()
 	if err != nil {
 		return salt, err
 	}
@@ -57,7 +63,7 @@ func (r *Repository) writeSaltFile(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *Repository) readSaltFile(auth Auth) ([]byte, error) {
+func (r *V1) ReadSaltFile(auth model.Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 	salt, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -67,7 +73,7 @@ func (r *Repository) readSaltFile(auth Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *Repository) deleteSaltFile(auth Auth) error {
+func (r *V1) DeleteSaltFile(auth model.Auth) error {
 	fileName := r.pathForSalt(auth)
 
 	err := os.Remove(fileName)
@@ -81,7 +87,7 @@ func (r *Repository) deleteSaltFile(auth Auth) error {
 //
 // Document Files
 //
-func (r *Repository) documentExists(auth Auth, salt []byte) (bool, error) {
+func (r *V1) DocumentExists(auth model.Auth, salt []byte) (bool, error) {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return false, err
@@ -90,7 +96,7 @@ func (r *Repository) documentExists(auth Auth, salt []byte) (bool, error) {
 	return storage.FileExists(filename)
 }
 
-func (r *Repository) writeDocument(data []byte, auth Auth, salt []byte) error {
+func (r *V1) WriteDocument(data []byte, auth model.Auth, salt []byte) error {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -101,7 +107,7 @@ func (r *Repository) writeDocument(data []byte, auth Auth, salt []byte) error {
 		return err
 	}
 
-	encrypted, err := encrypt(data, []byte(saltedPassword))
+	encrypted, err := utils.Encrypt(data, []byte(saltedPassword))
 	if err != nil {
 		return err
 	}
@@ -114,7 +120,7 @@ func (r *Repository) writeDocument(data []byte, auth Auth, salt []byte) error {
 	return nil
 }
 
-func (r *Repository) readDocument(auth Auth, salt []byte) ([]byte, error) {
+func (r *V1) ReadDocument(auth model.Auth, salt []byte) ([]byte, error) {
 	data := make([]byte, 0)
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
@@ -133,12 +139,12 @@ func (r *Repository) readDocument(auth Auth, salt []byte) ([]byte, error) {
 		return data, err
 	}
 
-	decrypted := decrypt(data, []byte(saltedPassword))
+	decrypted := utils.Decrypt(data, []byte(saltedPassword))
 
 	return decrypted, nil
 }
 
-func (r *Repository) deleteDocument(auth Auth, salt []byte) error {
+func (r *V1) DeleteDocument(auth model.Auth, salt []byte) error {
 	fileName, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -152,7 +158,7 @@ func (r *Repository) deleteDocument(auth Auth, salt []byte) error {
 	return nil
 }
 
-func (r *Repository) moveDocument(currentAuth Auth, salt []byte, newAuth Auth) error {
+func (r *V1) MoveDocument(currentAuth model.Auth, salt []byte, newAuth model.Auth) error {
 	currentFilename, err := r.pathForDocument(currentAuth, salt)
 	if err != nil {
 		return err

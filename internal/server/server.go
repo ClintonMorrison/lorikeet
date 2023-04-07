@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 )
 
@@ -50,7 +51,7 @@ func Run(
 		debugLogger: debugLogger,
 		secret:      recaptchaSecret,
 	}
-	repository := &Repository{dataPath}
+	repository := repository.NewRepositoryV1(dataPath)
 	lockoutTable := NewLockoutTable()
 	sessionTable := NewSessionTable()
 	documentService := &DocumentService{
@@ -67,7 +68,7 @@ func Run(
 		errorLogger:     errorLogger,
 	}
 
-	repository.createDataDirectory()
+	repository.CreateDataDirectory()
 
 	documentController := NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
 	http.HandleFunc(documentApiPath, documentController.Handle)
