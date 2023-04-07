@@ -1,4 +1,4 @@
-package server
+package recaptcha
 
 import (
 	"encoding/json"
@@ -10,9 +10,13 @@ import (
 
 // See https://developers.google.com/recaptcha/docs/verify
 
-type RecaptchaClient struct {
+type Client struct {
 	debugLogger *log.Logger
 	secret      string
+}
+
+func NewClient(debugLogger *log.Logger, secret string) *Client {
+	return &Client{debugLogger, secret}
 }
 
 type recaptchaValidationResponse struct {
@@ -22,7 +26,7 @@ type recaptchaValidationResponse struct {
 }
 
 // VerifyRecaptcha returns true if recaptcha is valid
-func (rc *RecaptchaClient) Verify(recaptchaResponse string, ip string) bool {
+func (rc *Client) Verify(recaptchaResponse string, ip string) bool {
 	data := url.Values{
 		"secret":   {rc.secret},
 		"response": {recaptchaResponse},

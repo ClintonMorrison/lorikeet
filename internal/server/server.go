@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
+	"github.com/ClintonMorrison/lorikeet/internal/utils"
 )
 
 const documentApiPath = "/api/document"
@@ -25,19 +27,19 @@ func Run(
 	storage.CreateDirectory(logPath)
 
 	// Request logger
-	requestLogger, err := createLogger(requestLogFilename, "[REQUEST] ")
+	requestLogger, err := utils.CreateLogger(requestLogFilename, "[REQUEST] ")
 	if err != nil {
 		panic(err)
 	}
 
 	// Error logger
-	errorLogger, err := createLogger(errorLogFilename, "[ERROR] ")
+	errorLogger, err := utils.CreateLogger(errorLogFilename, "[ERROR] ")
 	if err != nil {
 		panic(err)
 	}
 
 	// Debug logger
-	debugLogger, err := createLogger(debugLogFilename, "[DEBUG] ")
+	debugLogger, err := utils.CreateLogger(debugLogFilename, "[DEBUG] ")
 	if err != nil {
 		panic(err)
 	}
@@ -47,10 +49,10 @@ func Run(
 	}
 
 	cookieHelper := &CookieHelper{localDev}
-	recaptchaClient := &RecaptchaClient{
-		debugLogger: debugLogger,
-		secret:      recaptchaSecret,
-	}
+	recaptchaClient := recaptcha.NewClient(
+		debugLogger,
+		recaptchaSecret,
+	)
 	repository := repository.NewRepositoryV1(dataPath)
 	lockoutTable := NewLockoutTable()
 	sessionTable := NewSessionTable()

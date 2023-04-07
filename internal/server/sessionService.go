@@ -4,10 +4,11 @@ import (
 	"log"
 
 	"github.com/ClintonMorrison/lorikeet/internal/model"
+	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 )
 
 type SessionService struct {
-	recaptchaClient *RecaptchaClient
+	recaptchaClient *recaptcha.Client
 	documentService *DocumentService
 	sessionTable    *SessionTable
 	errorLogger     *log.Logger

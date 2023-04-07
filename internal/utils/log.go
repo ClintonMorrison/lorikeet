@@ -1,4 +1,4 @@
-package server
+package utils
 
 import (
 	"io"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func createLogger(filename string, prefix string) (*log.Logger, error) {
+func CreateLogger(filename string, prefix string) (*log.Logger, error) {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0700)
 	if err != nil && !os.IsExist(err) {
 		return nil, err

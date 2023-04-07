@@ -6,12 +6,13 @@ import (
 	"sync"
 
 	"github.com/ClintonMorrison/lorikeet/internal/model"
+	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 )
 
 type DocumentService struct {
 	repo            *repository.V1
-	recaptchaClient *RecaptchaClient
+	recaptchaClient *recaptcha.Client
 	sessionTable    *SessionTable
 	errorLogger     *log.Logger
 
