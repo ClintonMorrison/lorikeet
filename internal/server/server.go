@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
 	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
@@ -54,7 +55,7 @@ func Run(
 		recaptchaSecret,
 	)
 	repository := repository.NewRepositoryV1(dataPath)
-	lockoutTable := NewLockoutTable()
+	lockoutTable := lockout.NewTable()
 	sessionTable := NewSessionTable()
 	documentService := &DocumentService{
 		repo:            repository,

@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"log"
+
+	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 )
 
 type DocumentResponse struct {
@@ -23,7 +25,7 @@ type DocumentRequest struct {
 func NewDocumentController(
 	cookieHelper *CookieHelper,
 	service *DocumentService,
-	lockoutTable *LockoutTable,
+	lockoutTable *lockout.Table,
 	requestLogger *log.Logger) RestController {
 	// GET /document
 	var get MethodHandler = func(request ApiRequest) ApiResponse {

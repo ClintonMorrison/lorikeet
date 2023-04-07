@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ClintonMorrison/lorikeet/internal/model"
+	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 )
 
 type SessionRequest struct {
@@ -12,7 +13,11 @@ type SessionRequest struct {
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
-func NewSessionController(cookieHelper *CookieHelper, service *SessionService, lockoutTable *LockoutTable, requestLogger *log.Logger) RestController {
+func NewSessionController(
+	cookieHelper *CookieHelper,
+	service *SessionService,
+	lockoutTable *lockout.Table,
+	requestLogger *log.Logger) RestController {
 	// POST /session
 	var post MethodHandler = func(request ApiRequest) ApiResponse {
 		sessionRequest, err := parseSessionRequestBody(request.Body)
@@ -21,9 +26,9 @@ func NewSessionController(cookieHelper *CookieHelper, service *SessionService, l
 		}
 
 		auth := model.Auth{
-			Username: request.Context.username,
+			Username: request.Context.Username,
 			Password: sessionRequest.DecryptToken,
-			Ip:       request.Context.ip,
+			Ip:       request.Context.Ip,
 		}
 
 		token, err := service.GrantSession(auth, sessionRequest.RecaptchaResult)
@@ -39,7 +44,7 @@ func NewSessionController(cookieHelper *CookieHelper, service *SessionService, l
 
 	// DELETE /session
 	var delete MethodHandler = func(request ApiRequest) ApiResponse {
-		err := service.RevokeSession(request.Context.sessionToken, request.Context.username, request.Context.ip)
+		err := service.RevokeSession(request.Context.SessionToken, request.Context.Username, request.Context.Ip)
 		if err != nil {
 			return responseForError(err)
 		}

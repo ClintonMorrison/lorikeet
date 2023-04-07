@@ -59,8 +59,8 @@ func (s *DocumentService) checkDocumentExists(auth model.Auth, salt []byte) erro
 	return nil
 }
 
-func (s *DocumentService) authFromSession(context RequestContext) (model.Auth, error) {
-	session, err := s.sessionTable.GetSession(context.sessionToken, context.username, context.ip)
+func (s *DocumentService) authFromSession(context model.RequestContext) (model.Auth, error) {
+	session, err := s.sessionTable.GetSession(context.SessionToken, context.Username, context.Ip)
 	if err != nil {
 		return model.Auth{}, ERROR_INVALID_CREDENTIALS
 	}
@@ -94,8 +94,8 @@ func (s *DocumentService) createSalt(auth model.Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (s *DocumentService) CreateDocument(context RequestContext, document string, recaptchaResponse string) (string, error) {
-	auth := context.ToAuth(context.password)
+func (s *DocumentService) CreateDocument(context model.RequestContext, document string, recaptchaResponse string) (string, error) {
+	auth := context.ToAuth(context.Password)
 
 	// Validate username
 	if !isUsernameValid(auth.Username) {
@@ -143,9 +143,9 @@ func (s *DocumentService) CreateDocument(context RequestContext, document string
 	return session.SessionToken, nil
 }
 
-func (s *DocumentService) UpdateDocument(context RequestContext, document string) error {
+func (s *DocumentService) UpdateDocument(context model.RequestContext, document string) error {
 	// Validate username
-	if !isUsernameValid(context.username) {
+	if !isUsernameValid(context.Username) {
 		return ERROR_INVALID_CREDENTIALS
 	}
 
@@ -173,9 +173,9 @@ func (s *DocumentService) UpdateDocument(context RequestContext, document string
 	return nil
 }
 
-func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
+func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, error) {
 	// Validate username
-	if !isUsernameValid(context.username) {
+	if !isUsernameValid(context.Username) {
 		return nil, ERROR_INVALID_CREDENTIALS
 	}
 
@@ -202,9 +202,9 @@ func (s *DocumentService) GetDocument(context RequestContext) ([]byte, error) {
 	return document, nil
 }
 
-func (s *DocumentService) DeleteDocument(context RequestContext) error {
+func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 	// Validate username
-	if !isUsernameValid(context.username) {
+	if !isUsernameValid(context.Username) {
 		return ERROR_INVALID_CREDENTIALS
 	}
 
@@ -237,9 +237,9 @@ func (s *DocumentService) DeleteDocument(context RequestContext) error {
 	return nil
 }
 
-func (s *DocumentService) UpdateDocumentAndPassword(context RequestContext, newPassword string, document string) (string, error) {
+func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext, newPassword string, document string) (string, error) {
 	// Validate username
-	if !isUsernameValid(context.username) {
+	if !isUsernameValid(context.Username) {
 		return "", ERROR_INVALID_CREDENTIALS
 	}
 

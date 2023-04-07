@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/ClintonMorrison/lorikeet/internal/model"
 )
 
 func ParseCookies(request *http.Request) map[string]string {
@@ -71,4 +73,16 @@ func (ch *CookieHelper) SetSessionCookieHeader(sessionToken string) ResponseHead
 
 func (ch *CookieHelper) ClearSessionCookieHeader() ResponseHeader {
 	return ch.SetCookieHeader(sessionCookieName, "", 0)
+}
+
+func ParseBasicContext(r *http.Request) model.RequestContext {
+	username, password, _ := r.BasicAuth()
+
+	username = strings.TrimSpace(strings.ToLower(username))
+	ip := r.Header.Get("X-Forwarded-For")
+
+	cookies := ParseCookies(r)
+	sesionToken := cookies["session"]
+
+	return model.RequestContext{username, ip, password, sesionToken}
 }
