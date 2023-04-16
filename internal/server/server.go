@@ -67,7 +67,7 @@ func Run(
 	)
 	sessionService := service.NewSessionService(
 		recaptchaClient,
-		documentService,
+		repository,
 		sessionTable,
 		errorLogger,
 	)

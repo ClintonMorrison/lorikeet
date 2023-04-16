@@ -7,6 +7,7 @@ import (
 
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
+	"github.com/ClintonMorrison/lorikeet/internal/utils"
 )
 
 type ResponseHeader struct {
@@ -118,7 +119,7 @@ func (c *RestController) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *RestController) logRequest(r *http.Request, response ApiResponse, username string) {
-	ip := r.Header.Get("X-Forwarded-For")
+	ip := utils.GetIpFromRequest(r)
 	result := "OK"
 	if response.ErrorMsg != "" {
 		result = response.ErrorMsg

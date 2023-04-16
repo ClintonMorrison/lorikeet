@@ -40,7 +40,7 @@ func AuthFromRequest(r *http.Request) (Auth, error) {
 	username, password, ok := r.BasicAuth()
 
 	username = strings.ToLower(username)
-	ip := r.Header.Get("X-Forwarded-For")
+	ip := utils.GetIpFromRequest(r)
 
 	if !ok {
 		return Auth{}, errors.New("invalid authorization header")

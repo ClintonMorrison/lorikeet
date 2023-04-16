@@ -44,33 +44,11 @@ func isUsernameValid(username string) bool {
 }
 
 func (s *DocumentService) checkUserNameFree(auth model.Auth) error {
-	exists, err := s.repo.SaltFileExists(auth)
+	available, err := s.repo.IsUsernameAvailable(auth)
 	s.logError(err)
 
-	if exists {
+	if !available {
 		return errors.ALREADY_EXISTS
-	}
-
-	return nil
-}
-
-func (s *DocumentService) saltForUser(auth model.Auth) ([]byte, error) {
-	salt, err := s.repo.ReadSaltFile(auth)
-
-	if err != nil {
-		s.logError(err)
-		return nil, errors.INVALID_CREDENTIALS
-	}
-
-	return salt, nil
-}
-
-func (s *DocumentService) checkDocumentExists(auth model.Auth, salt []byte) error {
-	exists, err := s.repo.DocumentExists(auth, salt)
-	s.logError(err)
-
-	if !exists {
-		return errors.INVALID_CREDENTIALS
 	}
 
 	return nil
@@ -83,32 +61,6 @@ func (s *DocumentService) authFromSession(context model.RequestContext) (model.A
 	}
 
 	return context.ToAuth(session.DecryptToken), nil
-}
-
-func (s *DocumentService) checkAuth(auth model.Auth) ([]byte, error) {
-	salt, err := s.saltForUser(auth)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.checkDocumentExists(auth, salt)
-	if err != nil {
-		return nil, err
-	}
-
-	return salt, nil
-}
-
-func (s *DocumentService) createSalt(auth model.Auth) ([]byte, error) {
-	salt, err := s.repo.WriteSaltFile(auth)
-	s.logError(err)
-
-	if err != nil {
-		s.logError(err)
-		return nil, errors.SERVER_ERROR
-	}
-
-	return salt, nil
 }
 
 func (s *DocumentService) CreateDocument(context model.RequestContext, document string, recaptchaResponse string) (string, error) {
@@ -135,12 +87,7 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 		return "", err
 	}
 
-	salt, err := s.createSalt(auth)
-	if err != nil {
-		return "", err
-	}
-
-	err = s.repo.WriteDocument([]byte(document), auth, salt)
+	_, err = s.repo.CreateUser(auth, []byte(document))
 	if err != nil {
 		s.logError(err)
 		return "", errors.SERVER_ERROR
@@ -176,12 +123,12 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 	userMux.Lock()
 	defer userMux.Unlock()
 
-	salt, err := s.checkAuth(auth)
+	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return err
+		return errors.INVALID_CREDENTIALS
 	}
 
-	err = s.repo.WriteDocument([]byte(document), auth, salt)
+	_, err = s.repo.UpdateUser(user, model.UserUpdate{Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
 		return errors.SERVER_ERROR
@@ -205,18 +152,12 @@ func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, err
 	userMux.RLock()
 	defer userMux.RUnlock()
 
-	salt, err := s.checkAuth(auth)
+	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return nil, err
+		return nil, errors.INVALID_CREDENTIALS
 	}
 
-	document, err := s.repo.ReadDocument(auth, salt)
-	if err != nil {
-		s.logError(err)
-		return nil, errors.SERVER_ERROR
-	}
-
-	return document, nil
+	return user.Document, nil
 }
 
 func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
@@ -234,18 +175,12 @@ func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 	userMux.Lock()
 	defer userMux.Unlock()
 
-	salt, err := s.checkAuth(auth)
+	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return err
+		return errors.INVALID_CREDENTIALS
 	}
 
-	err = s.repo.DeleteDocument(auth, salt)
-	if err != nil {
-		s.logError(err)
-		return errors.SERVER_ERROR
-	}
-
-	err = s.repo.DeleteSaltFile(auth)
+	err = s.repo.DeleteUser(user)
 	if err != nil {
 		s.logError(err)
 		return errors.SERVER_ERROR
@@ -269,35 +204,24 @@ func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext
 	userMux.Lock()
 	defer userMux.Unlock()
 
-	salt, err := s.saltForUser(auth)
+	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return "", err
+		return "", errors.INVALID_CREDENTIALS
 	}
 
-	err = s.checkDocumentExists(auth, salt)
-	if err != nil {
-		return "", err
-	}
-
-	newAuth := model.Auth{Username: auth.Username, Password: string(newPassword), Ip: auth.Ip}
-	err = s.repo.MoveDocument(auth, salt, newAuth)
-	if err != nil {
-		s.logError(err)
-		return "", errors.SERVER_ERROR
-	}
-
-	err = s.repo.WriteDocument([]byte(document), newAuth, salt)
+	user, err = s.repo.UpdateUser(user, model.UserUpdate{Password: newPassword, Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
 		return "", errors.SERVER_ERROR
 	}
 
 	// Grant session for new user
-	session, err := s.sessionTable.Grant(newAuth.Username, newAuth.Ip, newAuth.Password)
+	session, err := s.sessionTable.Grant(user.Username, user.Auth.Ip, user.Auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
 		return "", err
 	}
+
 	if err != nil {
 		s.logError(err)
 		return "", errors.SERVER_ERROR

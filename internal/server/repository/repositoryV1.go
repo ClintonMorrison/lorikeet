@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 	"github.com/ClintonMorrison/lorikeet/internal/utils"
@@ -42,12 +43,12 @@ func (r *V1) pathForSalt(auth model.Auth) string {
 //
 // Salt Files
 //
-func (r *V1) SaltFileExists(auth model.Auth) (bool, error) {
+func (r *V1) saltFileExists(auth model.Auth) (bool, error) {
 	filename := r.pathForSalt(auth)
 	return storage.FileExists(filename)
 }
 
-func (r *V1) WriteSaltFile(auth model.Auth) ([]byte, error) {
+func (r *V1) writeSaltFile(auth model.Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 
 	salt, err := utils.MakeSalt()
@@ -63,7 +64,7 @@ func (r *V1) WriteSaltFile(auth model.Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *V1) ReadSaltFile(auth model.Auth) ([]byte, error) {
+func (r *V1) readSaltFile(auth model.Auth) ([]byte, error) {
 	fileName := r.pathForSalt(auth)
 	salt, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -73,7 +74,7 @@ func (r *V1) ReadSaltFile(auth model.Auth) ([]byte, error) {
 	return salt, nil
 }
 
-func (r *V1) DeleteSaltFile(auth model.Auth) error {
+func (r *V1) deleteSaltFile(auth model.Auth) error {
 	fileName := r.pathForSalt(auth)
 
 	err := os.Remove(fileName)
@@ -87,7 +88,7 @@ func (r *V1) DeleteSaltFile(auth model.Auth) error {
 //
 // Document Files
 //
-func (r *V1) DocumentExists(auth model.Auth, salt []byte) (bool, error) {
+func (r *V1) documentExists(auth model.Auth, salt []byte) (bool, error) {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return false, err
@@ -96,7 +97,7 @@ func (r *V1) DocumentExists(auth model.Auth, salt []byte) (bool, error) {
 	return storage.FileExists(filename)
 }
 
-func (r *V1) WriteDocument(data []byte, auth model.Auth, salt []byte) error {
+func (r *V1) writeDocument(data []byte, auth model.Auth, salt []byte) error {
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -120,7 +121,7 @@ func (r *V1) WriteDocument(data []byte, auth model.Auth, salt []byte) error {
 	return nil
 }
 
-func (r *V1) ReadDocument(auth model.Auth, salt []byte) ([]byte, error) {
+func (r *V1) readDocument(auth model.Auth, salt []byte) ([]byte, error) {
 	data := make([]byte, 0)
 	filename, err := r.pathForDocument(auth, salt)
 	if err != nil {
@@ -144,7 +145,7 @@ func (r *V1) ReadDocument(auth model.Auth, salt []byte) ([]byte, error) {
 	return decrypted, nil
 }
 
-func (r *V1) DeleteDocument(auth model.Auth, salt []byte) error {
+func (r *V1) deleteDocument(auth model.Auth, salt []byte) error {
 	fileName, err := r.pathForDocument(auth, salt)
 	if err != nil {
 		return err
@@ -158,7 +159,7 @@ func (r *V1) DeleteDocument(auth model.Auth, salt []byte) error {
 	return nil
 }
 
-func (r *V1) MoveDocument(currentAuth model.Auth, salt []byte, newAuth model.Auth) error {
+func (r *V1) moveDocument(currentAuth model.Auth, salt []byte, newAuth model.Auth) error {
 	currentFilename, err := r.pathForDocument(currentAuth, salt)
 	if err != nil {
 		return err
@@ -176,3 +177,104 @@ func (r *V1) MoveDocument(currentAuth model.Auth, salt []byte, newAuth model.Aut
 
 	return nil
 }
+
+// NEW INTERFACE
+func (r *V1) IsUsernameAvailable(auth model.Auth) (bool, error) {
+	exists, err := r.saltFileExists(auth)
+	return !exists, err
+}
+
+func (r *V1) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
+	salt, err := r.writeSaltFile(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.writeDocument(document, auth, salt)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := r.GetUser(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (r *V1) GetUser(auth model.Auth) (*model.User, error) {
+	salt, err := r.readSaltFile(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	exists, err := r.documentExists(auth, salt)
+	if !exists {
+		return nil, errors.INVALID_CREDENTIALS
+	}
+
+	document, err := r.readDocument(auth, salt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		Username: auth.Username,
+		Auth:     auth,
+		Metadata: model.UserMetadata{StorageVersion: 0},
+		Salt:     salt,
+		Document: document,
+	}, nil
+
+}
+
+func (r *V1) DeleteUser(user *model.User) error {
+	err := r.deleteDocument(user.Auth, user.Salt)
+	if err != nil {
+		return err
+	}
+
+	err = r.deleteSaltFile(user.Auth)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *V1) UpdateUser(user *model.User, update model.UserUpdate) (*model.User, error) {
+	updatedUser := user
+
+	if len(update.Password) > 0 {
+		newAuth := model.Auth{
+			Ip:       user.Auth.Ip,
+			Username: user.Auth.Username,
+			Password: update.Password,
+		}
+		err := r.moveDocument(user.Auth, user.Salt, newAuth)
+		if err != nil {
+			return nil, err
+		}
+
+		updatedUser.Auth = newAuth
+	}
+
+	if len(update.Document) > 0 {
+		err := r.writeDocument(update.Document, updatedUser.Auth, updatedUser.Salt)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	updatedUser, err := r.GetUser(updatedUser.Auth)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}
+
+// TODO: add way to get sign up and last accessed dates from legacy user files?
+// Could be based on last modified dates
+// https://www.includehelp.com/golang/print-the-last-modified-time-of-an-existing-file.aspx#:~:text=In%20the%20main()%20function,using%20the%20ModTime()%20function.

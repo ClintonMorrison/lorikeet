@@ -6,26 +6,27 @@ import (
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/recaptcha"
+	"github.com/ClintonMorrison/lorikeet/internal/server/repository"
 	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 )
 
 type SessionService struct {
 	recaptchaClient *recaptcha.Client
-	documentService *DocumentService
+	repository      repository.UserRepository
 	sessionTable    *session.Table
 	errorLogger     *log.Logger
 }
 
 func NewSessionService(
 	recaptchaClient *recaptcha.Client,
-	documentService *DocumentService,
+	repository repository.UserRepository,
 	sessionTable *session.Table,
 	errorLogger *log.Logger,
 
 ) *SessionService {
 	return &SessionService{
 		recaptchaClient,
-		documentService,
+		repository,
 		sessionTable,
 		errorLogger,
 	}
@@ -41,7 +42,7 @@ func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string)
 	}
 
 	// Validate auth
-	_, err := s.documentService.checkAuth(auth)
+	_, err := s.repository.GetUser(auth)
 	if err != nil {
 		s.errorLogger.Println("Auth in grant session request was not valid")
 		return "", errors.INVALID_CREDENTIALS

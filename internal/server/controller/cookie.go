@@ -37,7 +37,7 @@ func ParseBasicContext(r *http.Request) model.RequestContext {
 	username, password, _ := r.BasicAuth()
 
 	username = strings.TrimSpace(strings.ToLower(username))
-	ip := r.Header.Get("X-Forwarded-For")
+	ip := utils.GetIpFromRequest(r)
 
 	cookies := utils.ParseCookies(r)
 	sesionToken := cookies["session"]
