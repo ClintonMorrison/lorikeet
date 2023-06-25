@@ -2,8 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
@@ -15,7 +13,8 @@ type V2 struct {
 	dataPath string
 }
 
-func NewRepositoryV2(dataPath string) *V1 {
+func NewRepositoryV2(baseDataPath string) *V1 {
+	dataPath := fmt.Sprintf("%s/v2", baseDataPath)
 	return &V1{dataPath}
 }
 
@@ -40,69 +39,47 @@ func (r *V2) pathForDocument(auth model.Auth, salt []byte) (string, error) {
 	return fmt.Sprintf("%s/%s.data.txt", r.pathForUserFolder(auth), signature), nil
 }
 
+func (r *V2) resourceForDocument(auth model.Auth, salt []byte) (storage.FileResource, error) {
+	fileName, err := r.pathForDocument(auth, salt)
+	if err != nil {
+		return storage.FileResource{}, err
+	}
+
+	return storage.NewFileResource(fileName), nil
+}
+
 func (r *V2) pathForSalt(auth model.Auth) string {
 	return fmt.Sprintf("%s/salt.txt", r.pathForUserFolder(auth))
+}
+
+func (r *V2) resourceForSalt(auth model.Auth) storage.FileResource {
+	return storage.NewFileResource(r.pathForSalt(auth))
 }
 
 //
 // Salt Files
 //
-func (r *V2) saltFileExists(auth model.Auth) (bool, error) {
-	filename := r.pathForSalt(auth)
-	return storage.FileExists(filename)
-}
-
 func (r *V2) writeSaltFile(auth model.Auth) ([]byte, error) {
-	fileName := r.pathForSalt(auth)
+	resource := r.resourceForSalt(auth)
 
 	salt, err := utils.MakeSalt()
 	if err != nil {
 		return salt, err
 	}
 
-	err = ioutil.WriteFile(fileName, salt, 0644)
+	err = resource.Write(salt)
 	if err != nil {
 		return salt, err
 	}
 
 	return salt, nil
-}
-
-func (r *V2) readSaltFile(auth model.Auth) ([]byte, error) {
-	fileName := r.pathForSalt(auth)
-	salt, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return salt, err
-	}
-
-	return salt, nil
-}
-
-func (r *V2) deleteSaltFile(auth model.Auth) error {
-	fileName := r.pathForSalt(auth)
-
-	err := os.Remove(fileName)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 //
 // Document Files
 //
-func (r *V2) documentExists(auth model.Auth, salt []byte) (bool, error) {
-	filename, err := r.pathForDocument(auth, salt)
-	if err != nil {
-		return false, err
-	}
-
-	return storage.FileExists(filename)
-}
-
 func (r *V2) writeDocument(data []byte, auth model.Auth, salt []byte) error {
-	filename, err := r.pathForDocument(auth, salt)
+	resource, err := r.resourceForDocument(auth, salt)
 	if err != nil {
 		return err
 	}
@@ -117,7 +94,7 @@ func (r *V2) writeDocument(data []byte, auth model.Auth, salt []byte) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, encrypted, 0644)
+	err = resource.Write(encrypted)
 	if err != nil {
 		return nil
 	}
@@ -127,19 +104,17 @@ func (r *V2) writeDocument(data []byte, auth model.Auth, salt []byte) error {
 
 func (r *V2) readDocument(auth model.Auth, salt []byte) ([]byte, error) {
 	data := make([]byte, 0)
-	filename, err := r.pathForDocument(auth, salt)
+	resource, err := r.resourceForDocument(auth, salt)
 	if err != nil {
 		return data, err
 	}
 
-	data, err = ioutil.ReadFile(filename)
+	data, err = resource.Read()
 	if err != nil {
 		return data, err
 	}
 
 	saltedPassword, err := auth.SaltedPassword(salt)
-
-	data, err = ioutil.ReadFile(filename)
 	if err != nil {
 		return data, err
 	}
@@ -149,22 +124,8 @@ func (r *V2) readDocument(auth model.Auth, salt []byte) ([]byte, error) {
 	return decrypted, nil
 }
 
-func (r *V2) deleteDocument(auth model.Auth, salt []byte) error {
-	fileName, err := r.pathForDocument(auth, salt)
-	if err != nil {
-		return err
-	}
-
-	err = os.Remove(fileName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *V2) moveDocument(currentAuth model.Auth, salt []byte, newAuth model.Auth) error {
-	currentFilename, err := r.pathForDocument(currentAuth, salt)
+	resource, err := r.resourceForDocument(currentAuth, salt)
 	if err != nil {
 		return err
 	}
@@ -174,7 +135,7 @@ func (r *V2) moveDocument(currentAuth model.Auth, salt []byte, newAuth model.Aut
 		return err
 	}
 
-	err = os.Rename(currentFilename, newFilename)
+	err = resource.MoveTo(newFilename)
 	if err != nil {
 		return err
 	}
@@ -184,7 +145,8 @@ func (r *V2) moveDocument(currentAuth model.Auth, salt []byte, newAuth model.Aut
 
 // NEW INTERFACE
 func (r *V2) IsUsernameAvailable(auth model.Auth) (bool, error) {
-	exists, err := r.saltFileExists(auth)
+	resource := r.resourceForSalt(auth)
+	exists, err := resource.Exists()
 	return !exists, err
 }
 
@@ -208,12 +170,18 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 }
 
 func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
-	salt, err := r.readSaltFile(auth)
+	saltResource := r.resourceForSalt(auth)
+	salt, err := saltResource.Read()
 	if err != nil {
 		return nil, err
 	}
 
-	exists, err := r.documentExists(auth, salt)
+	documentResource, err := r.resourceForDocument(auth, salt)
+	if err != nil {
+		return nil, err
+	}
+
+	exists, err := documentResource.Exists()
 	if !exists {
 		return nil, errors.INVALID_CREDENTIALS
 	}
@@ -234,12 +202,19 @@ func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
 }
 
 func (r *V2) DeleteUser(user *model.User) error {
-	err := r.deleteDocument(user.Auth, user.Salt)
+	documentResource, err := r.resourceForDocument(user.Auth, user.Salt)
 	if err != nil {
 		return err
 	}
 
-	err = r.deleteSaltFile(user.Auth)
+	saltResource := r.resourceForSalt(user.Auth)
+
+	err = documentResource.Remove()
+	if err != nil {
+		return err
+	}
+
+	err = saltResource.Remove()
 	if err != nil {
 		return err
 	}
