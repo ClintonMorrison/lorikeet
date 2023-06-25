@@ -2,20 +2,29 @@ package repository
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
-	"github.com/ClintonMorrison/lorikeet/internal/utils"
 )
 
 type V2 struct {
-	dataPath string
+	dataPath               string
+	userMetadataRepository UserMetadataRepository
+	saltRepository         SaltRepository
+	documentRepository     DocumentRepository
 }
 
-func NewRepositoryV2(baseDataPath string) *V1 {
+func NewRepositoryV2(baseDataPath string) *V2 {
 	dataPath := fmt.Sprintf("%s/v2", baseDataPath)
-	return &V1{dataPath}
+	return &V2{
+		dataPath:               dataPath,
+		userMetadataRepository: UserMetadataRepository{dataPath: dataPath},
+		saltRepository:         SaltRepository{dataPath: dataPath},
+		documentRepository:     DocumentRepository{dataPath: dataPath},
+	}
 }
 
 func (r *V2) CreateDataDirectory() {
@@ -27,140 +36,41 @@ func (r *V2) CreateDataDirectory() {
 }
 
 func (r *V2) pathForUserFolder(auth model.Auth) string {
-	return fmt.Sprintf("%s/%s", r.dataPath, auth.Username)
-}
-
-func (r *V2) pathForDocument(auth model.Auth, salt []byte) (string, error) {
-	signature, err := auth.Signature(salt)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s/%s.data.txt", r.pathForUserFolder(auth), signature), nil
-}
-
-func (r *V2) resourceForDocument(auth model.Auth, salt []byte) (storage.FileResource, error) {
-	fileName, err := r.pathForDocument(auth, salt)
-	if err != nil {
-		return storage.FileResource{}, err
-	}
-
-	return storage.NewFileResource(fileName), nil
-}
-
-func (r *V2) pathForSalt(auth model.Auth) string {
-	return fmt.Sprintf("%s/salt.txt", r.pathForUserFolder(auth))
-}
-
-func (r *V2) resourceForSalt(auth model.Auth) storage.FileResource {
-	return storage.NewFileResource(r.pathForSalt(auth))
-}
-
-//
-// Salt Files
-//
-func (r *V2) writeSaltFile(auth model.Auth) ([]byte, error) {
-	resource := r.resourceForSalt(auth)
-
-	salt, err := utils.MakeSalt()
-	if err != nil {
-		return salt, err
-	}
-
-	err = resource.Write(salt)
-	if err != nil {
-		return salt, err
-	}
-
-	return salt, nil
-}
-
-//
-// Document Files
-//
-func (r *V2) writeDocument(data []byte, auth model.Auth, salt []byte) error {
-	resource, err := r.resourceForDocument(auth, salt)
-	if err != nil {
-		return err
-	}
-
-	saltedPassword, err := auth.SaltedPassword(salt)
-	if err != nil {
-		return err
-	}
-
-	encrypted, err := utils.Encrypt(data, []byte(saltedPassword))
-	if err != nil {
-		return err
-	}
-
-	err = resource.Write(encrypted)
-	if err != nil {
-		return nil
-	}
-
-	return nil
-}
-
-func (r *V2) readDocument(auth model.Auth, salt []byte) ([]byte, error) {
-	data := make([]byte, 0)
-	resource, err := r.resourceForDocument(auth, salt)
-	if err != nil {
-		return data, err
-	}
-
-	data, err = resource.Read()
-	if err != nil {
-		return data, err
-	}
-
-	saltedPassword, err := auth.SaltedPassword(salt)
-	if err != nil {
-		return data, err
-	}
-
-	decrypted := utils.Decrypt(data, []byte(saltedPassword))
-
-	return decrypted, nil
-}
-
-func (r *V2) moveDocument(currentAuth model.Auth, salt []byte, newAuth model.Auth) error {
-	resource, err := r.resourceForDocument(currentAuth, salt)
-	if err != nil {
-		return err
-	}
-
-	newFilename, err := r.pathForDocument(newAuth, salt)
-	if err != nil {
-		return err
-	}
-
-	err = resource.MoveTo(newFilename)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return pathForUserFolder(r.dataPath, auth)
 }
 
 // NEW INTERFACE
 func (r *V2) IsUsernameAvailable(auth model.Auth) (bool, error) {
-	resource := r.resourceForSalt(auth)
-	exists, err := resource.Exists()
+	exists, err := r.saltRepository.Exists(auth)
 	return !exists, err
 }
 
 func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
-	salt, err := r.writeSaltFile(auth)
+	// Create salt
+	salt, err := r.saltRepository.Create(auth)
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.writeDocument(document, auth, salt)
+	// Create metadata
+	now := time.Now()
+	metadata := model.UserMetadata{
+		SignUpTime:     now,
+		LastAccessTime: now,
+		StorageVersion: 2,
+	}
+	err = r.userMetadataRepository.CreateOrUpdate(auth, metadata)
 	if err != nil {
 		return nil, err
 	}
 
+	// Create document
+	err = r.documentRepository.CreateOrUpdate(document, auth, salt)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load user
 	user, err := r.GetUser(auth)
 	if err != nil {
 		return nil, err
@@ -170,23 +80,25 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 }
 
 func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
-	saltResource := r.resourceForSalt(auth)
-	salt, err := saltResource.Read()
+	// Load salt
+	salt, err := r.saltRepository.Get(auth)
 	if err != nil {
 		return nil, err
 	}
 
-	documentResource, err := r.resourceForDocument(auth, salt)
+	// Load metadata
+	metadata, err := r.userMetadataRepository.Get(auth)
 	if err != nil {
 		return nil, err
 	}
 
-	exists, err := documentResource.Exists()
+	// Load document
+	exists, err := r.documentRepository.Exists(auth, salt)
 	if !exists {
 		return nil, errors.INVALID_CREDENTIALS
 	}
 
-	document, err := r.readDocument(auth, salt)
+	document, err := r.documentRepository.Get(auth, salt)
 	if err != nil {
 		return nil, err
 	}
@@ -194,27 +106,33 @@ func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
 	return &model.User{
 		Username: auth.Username,
 		Auth:     auth,
-		Metadata: model.UserMetadata{StorageVersion: 2},
+		Metadata: metadata,
 		Salt:     salt,
 		Document: document,
 	}, nil
-
 }
 
 func (r *V2) DeleteUser(user *model.User) error {
-	documentResource, err := r.resourceForDocument(user.Auth, user.Salt)
+	// Remove document
+	err := r.documentRepository.Remove(user.Auth, user.Salt)
 	if err != nil {
 		return err
 	}
 
-	saltResource := r.resourceForSalt(user.Auth)
-
-	err = documentResource.Remove()
+	// Remove salt
+	err = r.saltRepository.Remove(user.Auth)
 	if err != nil {
 		return err
 	}
 
-	err = saltResource.Remove()
+	// Remove metadata
+	err = r.userMetadataRepository.Remove(user.Auth)
+	if err != nil {
+		return err
+	}
+
+	// Remove user folder
+	err = os.Remove(r.pathForUserFolder(user.Auth))
 	if err != nil {
 		return err
 	}
@@ -225,13 +143,14 @@ func (r *V2) DeleteUser(user *model.User) error {
 func (r *V2) UpdateUser(user *model.User, update model.UserUpdate) (*model.User, error) {
 	updatedUser := user
 
+	// Update password, if present
 	if len(update.Password) > 0 {
 		newAuth := model.Auth{
 			Ip:       user.Auth.Ip,
 			Username: user.Auth.Username,
 			Password: update.Password,
 		}
-		err := r.moveDocument(user.Auth, user.Salt, newAuth)
+		err := r.documentRepository.Move(user.Auth, user.Salt, newAuth)
 		if err != nil {
 			return nil, err
 		}
@@ -239,13 +158,25 @@ func (r *V2) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 		updatedUser.Auth = newAuth
 	}
 
+	// Update document, if present
 	if len(update.Document) > 0 {
-		err := r.writeDocument(update.Document, updatedUser.Auth, updatedUser.Salt)
+		err := r.documentRepository.CreateOrUpdate(update.Document, updatedUser.Auth, updatedUser.Salt)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	// Update last access time, if present
+	if !update.LastAccessTime.IsZero() {
+		metadata := user.Metadata
+		metadata.LastAccessTime = update.LastAccessTime
+		err := r.userMetadataRepository.CreateOrUpdate(updatedUser.Auth, metadata)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Reload updated user
 	updatedUser, err := r.GetUser(updatedUser.Auth)
 	if err != nil {
 		return nil, err
