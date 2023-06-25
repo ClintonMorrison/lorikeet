@@ -3,11 +3,12 @@ package model
 import "time"
 
 type User struct {
-	Username string
-	Auth     Auth
-	Metadata UserMetadata
-	Salt     []byte
-	Document []byte
+	Username   string
+	Auth       Auth
+	Metadata   UserMetadata
+	ClientSalt []byte // only used for client-side encryption
+	ServerSalt []byte // only used for server-side encryption
+	Document   []byte
 }
 
 type UserUpdate struct {

@@ -120,3 +120,82 @@ When retrieving passwords, the server determines which file contains the passwor
 The passwords are still partially encrypted (from the frontend encryption). The frontend decrypts them fully using the secret user credentials which it has not shared with the server.
 
 The result is that the passwords are stored securely, and it's not possible to decrypt them server-side without the user's original credentials.
+
+## Auth Changes
+
+### Original Flow
+User enters username `u` and password `p` on client-side
+
+Client-side:
+```
+u = username
+p = password
+
+SALT_1 = hard coded client-side pepper
+SALT_2 = hard coded client-side pepper
+
+
+t1 = sha256(p + u + SALT_1)
+
+Client saves t1 in browser session storage.
+Client encrypts/decrypts with t1
+
+
+For requests client computes:
+t2 = sha256(t1 + u + SALT_2)
+
+Client sends t2 in requests
+```
+
+Server-side:
+```
+u = username
+t2 = token from client-side
+s = user-specific salt
+t3 = sha256(t2, s)
+
+sig = sha256(u, t3)
+
+
+Server checks for existance of <u>.salt.txt file
+Server checks for existance <sig>.data.txt file
+Server encrypts/decrypts document data using t3
+```
+
+
+### New Flow
+User enters username `u` and password `p` on client-side
+
+Client-side:
+```
+u = username
+p = password
+spub = user specific public salt
+
+SALT_1 = hard coded client-side pepper
+SALT_2 = hard coded client-side pepper
+
+t_server = t1 = sha256(p + u + SALT_1)
+t_client = sha256(p + u + spub + PEPPER_2)
+
+Client saves t_server, t_client in browser session storage.
+
+Client encrypts/decrypts with t_client
+Client sends t_server in requests
+```
+
+Server-side:
+```
+u = username
+t2 = token from client-side
+s = user-specific salt
+t3 = sha256(t2, s)
+
+sig = sha256(u, t3)
+
+
+Server checks for existance of <u>.salt.txt file
+Server checks for existance <sig>.data.txt file
+Server encrypts/decrypts document data using t3
+```
+

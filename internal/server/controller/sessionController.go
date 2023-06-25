@@ -15,6 +15,10 @@ type SessionRequest struct {
 	RecaptchaResult string `json:"recaptchaResult"`
 }
 
+type SessionResponse struct {
+	Salt string `json:"salt"`
+}
+
 func NewSessionController(
 	cookieHelper *CookieHelper,
 	service *service.SessionService,
@@ -33,7 +37,7 @@ func NewSessionController(
 			Ip:       request.Context.Ip,
 		}
 
-		token, err := service.GrantSession(auth, sessionRequest.RecaptchaResult)
+		token, user, err := service.GrantSession(auth, sessionRequest.RecaptchaResult)
 		if err != nil {
 			return responseForError(err)
 		}
@@ -41,7 +45,12 @@ func NewSessionController(
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, cookieHelper.SetSessionCookieHeader(token))
 
-		return ApiResponse{201, headers, emptyBody, ""}
+		body, err := json.Marshal(SessionResponse{string(user.ClientSalt)})
+		if err != nil {
+			return responseForError(err)
+		}
+
+		return ApiResponse{201, headers, body, ""}
 	}
 
 	// DELETE /session

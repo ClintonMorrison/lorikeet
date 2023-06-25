@@ -220,17 +220,17 @@ func (r *V1) GetUser(auth model.Auth) (*model.User, error) {
 	}
 
 	return &model.User{
-		Username: auth.Username,
-		Auth:     auth,
-		Metadata: model.UserMetadata{StorageVersion: 1},
-		Salt:     salt,
-		Document: document,
+		Username:   auth.Username,
+		Auth:       auth,
+		Metadata:   model.UserMetadata{StorageVersion: 1},
+		ServerSalt: salt,
+		Document:   document,
 	}, nil
 
 }
 
 func (r *V1) DeleteUser(user *model.User) error {
-	err := r.deleteDocument(user.Auth, user.Salt)
+	err := r.deleteDocument(user.Auth, user.ServerSalt)
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (r *V1) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 			Username: user.Auth.Username,
 			Password: update.Password,
 		}
-		err := r.moveDocument(user.Auth, user.Salt, newAuth)
+		err := r.moveDocument(user.Auth, user.ServerSalt, newAuth)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (r *V1) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 	}
 
 	if len(update.Document) > 0 {
-		err := r.writeDocument(update.Document, updatedUser.Auth, updatedUser.Salt)
+		err := r.writeDocument(update.Document, updatedUser.Auth, updatedUser.ServerSalt)
 		if err != nil {
 			return nil, err
 		}

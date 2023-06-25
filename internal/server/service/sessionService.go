@@ -33,29 +33,29 @@ func NewSessionService(
 }
 
 // GrantSession returns a new session token, or an error
-func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string) (string, error) {
+func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string) (string, *model.User, error) {
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha in grant session request was not valid")
-		return "", errors.INVALID_CREDENTIALS
+		return "", nil, errors.INVALID_CREDENTIALS
 	}
 
 	// Validate auth
-	_, err := s.repository.GetUser(auth)
+	user, err := s.repository.GetUser(auth)
 	if err != nil {
 		s.errorLogger.Println("Auth in grant session request was not valid")
-		return "", errors.INVALID_CREDENTIALS
+		return "", nil, errors.INVALID_CREDENTIALS
 	}
 
 	// Grant session (proves user passed recaptcha with valid auth)
 	session, err := s.sessionTable.Grant(auth.Username, auth.Ip, auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
-		return "", err
+		return "", nil, err
 	}
 
-	return session.SessionToken, nil
+	return session.SessionToken, user, nil
 }
 
 // RevokeSession deletes an existing session

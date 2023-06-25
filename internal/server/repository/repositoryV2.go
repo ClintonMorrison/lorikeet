@@ -47,7 +47,7 @@ func (r *V2) IsUsernameAvailable(auth model.Auth) (bool, error) {
 
 func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 	// Create salt
-	salt, err := r.saltRepository.Create(auth)
+	salts, err := r.saltRepository.Create(auth)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 	}
 
 	// Create document
-	err = r.documentRepository.CreateOrUpdate(document, auth, salt)
+	err = r.documentRepository.CreateOrUpdate(document, auth, salts.ServerSalt)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 
 func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
 	// Load salt
-	salt, err := r.saltRepository.Get(auth)
+	salts, err := r.saltRepository.Get(auth)
 	if err != nil {
 		return nil, err
 	}
@@ -93,28 +93,29 @@ func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
 	}
 
 	// Load document
-	exists, err := r.documentRepository.Exists(auth, salt)
+	exists, err := r.documentRepository.Exists(auth, salts.ServerSalt)
 	if !exists {
 		return nil, errors.INVALID_CREDENTIALS
 	}
 
-	document, err := r.documentRepository.Get(auth, salt)
+	document, err := r.documentRepository.Get(auth, salts.ServerSalt)
 	if err != nil {
 		return nil, err
 	}
 
 	return &model.User{
-		Username: auth.Username,
-		Auth:     auth,
-		Metadata: metadata,
-		Salt:     salt,
-		Document: document,
+		Username:   auth.Username,
+		Auth:       auth,
+		Metadata:   metadata,
+		ClientSalt: salts.ClientSalt,
+		ServerSalt: salts.ServerSalt,
+		Document:   document,
 	}, nil
 }
 
 func (r *V2) DeleteUser(user *model.User) error {
 	// Remove document
-	err := r.documentRepository.Remove(user.Auth, user.Salt)
+	err := r.documentRepository.Remove(user.Auth, user.ServerSalt)
 	if err != nil {
 		return err
 	}
@@ -150,7 +151,7 @@ func (r *V2) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 			Username: user.Auth.Username,
 			Password: update.Password,
 		}
-		err := r.documentRepository.Move(user.Auth, user.Salt, newAuth)
+		err := r.documentRepository.Move(user.Auth, user.ServerSalt, newAuth)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +161,7 @@ func (r *V2) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 
 	// Update document, if present
 	if len(update.Document) > 0 {
-		err := r.documentRepository.CreateOrUpdate(update.Document, updatedUser.Auth, updatedUser.Salt)
+		err := r.documentRepository.CreateOrUpdate(update.Document, updatedUser.Auth, updatedUser.ServerSalt)
 		if err != nil {
 			return nil, err
 		}
