@@ -19,5 +19,5 @@ type UserUpdate struct {
 type UserMetadata struct {
 	SignUpTime     time.Time `json:"signUpTime"`
 	LastAccessTime time.Time `json:"lastAccessTime"`
-	StorageVersion int       `json:"storageVersion"` // 0 = legacy, 1 = new
+	StorageVersion int       `json:"storageVersion"` // 1 = legacy, 2 = new
 }
