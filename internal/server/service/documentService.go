@@ -3,7 +3,6 @@ package service
 import (
 	"log"
 	"regexp"
-	"sync"
 
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
@@ -13,27 +12,26 @@ import (
 )
 
 type DocumentService struct {
-	repo            *repository.V1
+	repo            repository.UserRepository
 	recaptchaClient *recaptcha.Client
 	sessionTable    *session.Table
+	userLockTable   *UserLockTable
 	errorLogger     *log.Logger
-
-	lockByUser map[string]*sync.RWMutex
-	lockMux    sync.RWMutex
 }
 
 func NewDocumentService(
-	repository *repository.V1,
+	repository repository.UserRepository,
 	recaptchaClient *recaptcha.Client,
 	sessionTable *session.Table,
+	userLockTable *UserLockTable,
 	errorLogger *log.Logger,
 ) *DocumentService {
 	return &DocumentService{
 		repo:            repository,
 		recaptchaClient: recaptchaClient,
 		sessionTable:    sessionTable,
+		userLockTable:   userLockTable,
 		errorLogger:     errorLogger,
-		lockByUser:      make(map[string]*sync.RWMutex),
 	}
 }
 
@@ -78,9 +76,8 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 		return "", errors.INVALID_CREDENTIALS
 	}
 
-	userMux := s.getLockForUser(auth.Username)
-	userMux.Lock()
-	defer userMux.Unlock()
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	err := s.checkUserNameFree(auth)
 	if err != nil {
@@ -119,9 +116,8 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 		return err
 	}
 
-	userMux := s.getLockForUser(auth.Username)
-	userMux.Lock()
-	defer userMux.Unlock()
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
@@ -148,9 +144,8 @@ func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, err
 		return nil, err
 	}
 
-	userMux := s.getLockForUser(auth.Username)
-	userMux.RLock()
-	defer userMux.RUnlock()
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
@@ -171,9 +166,8 @@ func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 		return err
 	}
 
-	userMux := s.getLockForUser(auth.Username)
-	userMux.Lock()
-	defer userMux.Unlock()
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
@@ -200,9 +194,8 @@ func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext
 		return "", err
 	}
 
-	userMux := s.getLockForUser(auth.Username)
-	userMux.Lock()
-	defer userMux.Unlock()
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
@@ -234,15 +227,4 @@ func (s *DocumentService) logError(err error) {
 	if err != nil {
 		s.errorLogger.Printf("%s\n", err.Error())
 	}
-}
-
-func (s *DocumentService) getLockForUser(username string) *sync.RWMutex {
-	s.lockMux.Lock()
-	defer s.lockMux.Unlock()
-
-	if s.lockByUser[username] == nil {
-		s.lockByUser[username] = &sync.RWMutex{}
-	}
-
-	return s.lockByUser[username]
 }

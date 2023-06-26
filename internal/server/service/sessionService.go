@@ -14,6 +14,7 @@ type SessionService struct {
 	recaptchaClient *recaptcha.Client
 	repository      repository.UserRepository
 	sessionTable    *session.Table
+	userLockTable   *UserLockTable
 	errorLogger     *log.Logger
 }
 
@@ -21,6 +22,7 @@ func NewSessionService(
 	recaptchaClient *recaptcha.Client,
 	repository repository.UserRepository,
 	sessionTable *session.Table,
+	userLockTable *UserLockTable,
 	errorLogger *log.Logger,
 
 ) *SessionService {
@@ -28,6 +30,7 @@ func NewSessionService(
 		recaptchaClient,
 		repository,
 		sessionTable,
+		userLockTable,
 		errorLogger,
 	}
 }
@@ -40,6 +43,10 @@ func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string)
 		s.errorLogger.Println("Recaptcha in grant session request was not valid")
 		return "", nil, errors.INVALID_CREDENTIALS
 	}
+
+	// Lock on username
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
 
 	// Validate auth
 	user, err := s.repository.GetUser(auth)
@@ -60,6 +67,9 @@ func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string)
 
 // RevokeSession deletes an existing session
 func (s *SessionService) RevokeSession(token string, username string, ip string) error {
+	s.userLockTable.Lock(username)
+	defer s.userLockTable.Unlock(username)
+
 	err := s.sessionTable.RevokeSession(token, username)
 	if err != nil {
 		s.errorLogger.Println("Unable to revoke session")

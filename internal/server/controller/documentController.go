@@ -13,11 +13,6 @@ type DocumentResponse struct {
 	Document string `json:"document,omitempty"`
 }
 
-type PasswordRequest struct {
-	Password string `json:"password"`
-	Document string `json:"document"`
-}
-
 type DocumentRequest struct {
 	Password        string `json:"password,omitempty"`
 	Document        string `json:"document"`

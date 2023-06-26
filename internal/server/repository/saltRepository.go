@@ -30,7 +30,7 @@ func (r *SaltRepository) pathForClientSalt(auth model.Auth) string {
 }
 
 func (r *SaltRepository) resourceForClientSalt(auth model.Auth) storage.FileResource {
-	return storage.NewFileResource(r.pathForServerSalt(auth))
+	return storage.NewFileResource(r.pathForClientSalt(auth))
 }
 
 // Create generates a new salt file
@@ -41,24 +41,24 @@ func (r *SaltRepository) Create(auth model.Auth) (UserSalts, error) {
 	serverResource := r.resourceForServerSalt(auth)
 	serverSalt, err := utils.MakeSalt()
 	if err != nil {
-		return UserSalts{}, err
+		return UserSalts{}, fmt.Errorf("unable to generate server salt: %s", err.Error())
 	}
 
 	err = serverResource.Write(serverSalt)
 	if err != nil {
-		return salts, err
+		return salts, fmt.Errorf("unable to write server salt: %s", err.Error())
 	}
 
 	// Generate client salt
 	clientResource := r.resourceForClientSalt(auth)
 	clientSalt, err := utils.MakeSalt()
 	if err != nil {
-		return salts, err
+		return salts, fmt.Errorf("unable to generate client salt: %s", err.Error())
 	}
 
 	err = clientResource.Write(clientSalt)
 	if err != nil {
-		return salts, err
+		return salts, fmt.Errorf("unable to write client salt: %s", err.Error())
 	}
 
 	return UserSalts{ClientSalt: clientSalt, ServerSalt: serverSalt}, nil

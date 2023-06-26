@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log"
 
@@ -45,7 +46,11 @@ func NewSessionController(
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, cookieHelper.SetSessionCookieHeader(token))
 
-		body, err := json.Marshal(SessionResponse{string(user.ClientSalt)})
+		response := SessionResponse{
+			Salt: base64.URLEncoding.EncodeToString([]byte(user.ClientSalt)),
+		}
+
+		body, err := json.Marshal(response)
 		if err != nil {
 			return responseForError(err)
 		}

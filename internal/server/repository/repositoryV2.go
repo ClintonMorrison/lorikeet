@@ -46,10 +46,16 @@ func (r *V2) IsUsernameAvailable(auth model.Auth) (bool, error) {
 }
 
 func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
+	// Create user folder
+	err := storage.CreateDirectory(r.pathForUserFolder(auth))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create user folder: %s", err.Error())
+	}
+
 	// Create salt
 	salts, err := r.saltRepository.Create(auth)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to create salt: %s", err.Error())
 	}
 
 	// Create metadata

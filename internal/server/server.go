@@ -56,19 +56,22 @@ func Run(
 		debugLogger,
 		recaptchaSecret,
 	)
-	repository := repository.NewRepositoryV1(dataPath)
+	repository := repository.NewRepositoryV2(dataPath) // repository.NewRepositoryV1(dataPath)
 	lockoutTable := lockout.NewTable()
 	sessionTable := session.NewTable()
+	userLockTable := service.NewUserLockTable()
 	documentService := service.NewDocumentService(
 		repository,
 		recaptchaClient,
 		sessionTable,
+		userLockTable,
 		errorLogger,
 	)
 	sessionService := service.NewSessionService(
 		recaptchaClient,
 		repository,
 		sessionTable,
+		userLockTable,
 		errorLogger,
 	)
 
