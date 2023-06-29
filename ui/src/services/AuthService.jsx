@@ -3,8 +3,8 @@ import AES from 'crypto-js/aes';
 import UTF_8 from 'crypto-js/enc-utf8';
 import _ from 'lodash';
 
-const SALT_1 = 'CC352C99A14616AD22678563ECDA5';
-const SALT_2 = '7767B9225CF66B418DD2A39CBC4AA';
+const PEPPER_1 = 'CC352C99A14616AD22678563ECDA5';
+const PEPPER_2 = '7767B9225CF66B418DD2A39CBC4AA';
 
 export default class AuthService {
   constructor() {
@@ -13,12 +13,12 @@ export default class AuthService {
 
   firstHash(password) {
     const username = this.getUsername();
-    return sha256(password + username + SALT_1).toString();
+    return sha256(password + username + PEPPER_1).toString();
   }
 
   secondHash(token) {
     const username = this.getUsername();
-    return sha256(token + username + SALT_2).toString();
+    return sha256(token + username + PEPPER_2).toString();
   }
 
   doubleHash(password) {
@@ -36,6 +36,11 @@ export default class AuthService {
 
   setPassword(password) {
     sessionStorage.setItem('token', this.firstHash(password));
+  }
+
+  getServerTokenV2(password) {
+    console.log('called getServerTokenV2. username: <', this.getUsername(), "> and password ", password)
+    return generateServerToken({ username: this.getUsername(), password });
   }
 
   sessionExists() {
@@ -63,8 +68,13 @@ export default class AuthService {
     return this.secondHash(token);
   }
 
-  encryptWithToken(text, token = false) {
-    token = token || this.getToken();
+  encryptWithToken(text) {
+    const token = this.getToken();
+    return AES.encrypt(text, token).toString();
+  }
+
+  encryptWithUpdatedPassword(text, updatedPassword) {
+    const token = this.firstHash(updatedPassword);
     return AES.encrypt(text, token).toString();
   }
 
@@ -85,4 +95,12 @@ export default class AuthService {
     const encoded = btoa(`${username}:${decryptToken}`);
     return { 'Authorization': `Basic ${encoded}` };
   }
+}
+
+const generateServerToken = ({ username, password }) => {
+  return sha256(password + username + PEPPER_1).toString();
+}
+
+const generateClientToken = ({ username, password, salt }) => {
+  return sha256(password + username + salt + PEPPER_2).toString();
 }

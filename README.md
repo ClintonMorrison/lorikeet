@@ -172,10 +172,10 @@ u = username
 p = password
 spub = user specific public salt
 
-SALT_1 = hard coded client-side pepper
-SALT_2 = hard coded client-side pepper
+PEPPER_1 = hard coded client-side pepper
+PEPPER_2 = hard coded client-side pepper
 
-t_server = t1 = sha256(p + u + SALT_1)
+t_server = t1 = sha256(p + u + PEPPER_1)
 t_client = sha256(p + u + spub + PEPPER_2)
 
 Client saves t_server, t_client in browser session storage.
