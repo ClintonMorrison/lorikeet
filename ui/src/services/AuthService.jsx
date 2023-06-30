@@ -1,5 +1,3 @@
-import AES from 'crypto-js/aes';
-import UTF_8 from 'crypto-js/enc-utf8';
 import _ from 'lodash';
 
 class StorageHelper {
@@ -17,7 +15,6 @@ class StorageHelper {
     return sessionStorage.setItem('token', value);
   }
 }
-
 
 export default class AuthService {
   constructor({ encryptionService }) {
@@ -83,16 +80,16 @@ export default class AuthService {
   encrypt({ text, password }) {
     const username = this.getUsername();
 
-    const token = password ?
+    const secret = password ?
       this.encryptionService.generateClientEncryptTokenV1({ username, password }) :
       this.getClientToken();
 
-    return AES.encrypt(text, token).toString();
+    return this.encryptionService.encrypt({ text, secret });
   }
 
   decrypt({ text }) {
-    const token = this.getClientToken();
-    return AES.decrypt(text, token).toString(UTF_8);
+    const secret = this.getClientToken();
+    return this.encryptionService.decrypt({ text, secret });
   }
 
   getAuthedHeaders() {
