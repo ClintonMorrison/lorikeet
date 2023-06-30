@@ -7,9 +7,12 @@ const PEPPER_2 = '7767B9225CF66B418DD2A39CBC4AA';
 
 
 export default class EncryptionService {
-  // V1 encryption
   generateClientEncryptTokenV1({ username, password }) {
     return sha256(password + username + PEPPER_1).toString();
+  }
+
+  generateClientEncryptTokenV2({ username, password, salt }) {
+    return sha256(password + username + salt).toString();
   }
 
   // Either password or clientEncryptToken is required
@@ -22,7 +25,6 @@ export default class EncryptionService {
     return sha256(t1 + username + PEPPER_2).toString();
   }
 
-
   encrypt({ text, secret }) {
     return AES.encrypt(text, secret).toString();
   }
@@ -30,6 +32,4 @@ export default class EncryptionService {
   decrypt({ text, secret }) {
     return AES.decrypt(text, secret).toString(UTF_8);
   }
-
-  // V2 encryption
 }

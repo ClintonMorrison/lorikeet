@@ -49,7 +49,8 @@ export default class Login extends React.Component {
     this.props.services.sessionService.createSession({ recaptchaResult })
       .then((resp) => {
         this.resetRecaptcha();
-        return this.props.services.documentService.loadDocument();
+        this.props.services.authService.setCredentials({ password, salt: resp.data.salt });
+        return this.props.services.documentService.loadDocument({ password });
       })
       .then(() => {
         this.props.history.push('/passwords');

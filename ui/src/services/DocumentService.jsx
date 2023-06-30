@@ -8,28 +8,36 @@ export default class AuthService {
   constructor({ apiService, authService }) {
     this.apiService = apiService;
     this.authService = authService;
+    this.storageVersion = 0;
+    this.salt = null;
+    this.document = null;
   }
 
   createDocument({ username, password, recaptchaResult }) {
+    this.storageVersion = 2; // use new version for all new users
     this.authService.setCredentials({ username, password });
 
     return this.apiService.post("document", {
       document: '',
       password: this.authService.getServerToken({ password }),
       recaptchaResult,
-    }, this.authService.getRegisterHeaders());
+    }, this.authService.getRegisterHeaders()).then(resp => {
+      this.salt = _.get(resp, 'data.salt') || '';
+      this.authService.setCredentials({ password, salt: this.salt });
+    });
   }
 
   loadDocument() {
     return this.apiService.get("document", {}, this.authService.getAuthedHeaders()).then(resp => {
       const encryptedDocument = _.get(resp, "data.document") || '';
+      this.storageVersion = _.get(resp, 'data.storageVersion') || 1;
+      this.salt = _.get(resp, 'data.salt') || '';
 
       const decryptedDocument = encryptedDocument ?
-        this.authService.decrypt({ text: encryptedDocument }) :
+        this.authService.decrypt({ text: encryptedDocument, version: this.storageVersion }) :
         JSON.stringify(defaultEmptyDocument);
 
       this.document = JSON.parse(decryptedDocument);
-
       return this.document;
     }).catch(e => {
       this.apiService.handleAuthError(e);
@@ -38,10 +46,12 @@ export default class AuthService {
 
   updateDocument({ document, password }) {
     const unencryptedDocument = JSON.stringify(document);
+    const version = this.storageVersion;
+    const salt = this.salt;
 
     const encryptedDocument = password ?
-      this.authService.encrypt({ text: unencryptedDocument, password }) :
-      this.authService.encrypt({ text: unencryptedDocument });
+      this.authService.encrypt({ text: unencryptedDocument, salt, password, version }) :
+      this.authService.encrypt({ text: unencryptedDocument, version });
 
     return this.apiService.put("document", {
       document: encryptedDocument,
@@ -75,7 +85,7 @@ export default class AuthService {
     return this.loadDocument().then(document => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
-      this.authService.setCredentials({ password })
+      this.authService.setCredentials({ password, salt: resp.data.salt })
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });
