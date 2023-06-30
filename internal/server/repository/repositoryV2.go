@@ -61,10 +61,9 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 	// Create metadata
 	now := time.Now()
 	metadata := model.UserMetadata{
-		SignUpTime:           now,
-		LastAccessTime:       now,
-		ClientStorageVersion: 1,
-		ServerStorageVersion: 2,
+		SignUpTime:     now,
+		LastAccessTime: now,
+		StorageVersion: 2,
 	}
 	err = r.userMetadataRepository.CreateOrUpdate(auth, metadata)
 	if err != nil {

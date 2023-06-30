@@ -10,10 +10,9 @@ import (
 )
 
 type DocumentResponse struct {
-	Document             string `json:"document"`             // encrypted password data
-	Salt                 string `json:"salt"`                 // salt for client to use
-	ClientStorageVersion int    `json:"clientStorageVersion"` // specifies which client encrypt algorithm was used
-	ServerStorageVersion int    `json:"serverStorageVersion"` // specifies how data is stored on sever (1 = legacy, 2 = new)
+	Document       string `json:"document"`       // encrypted password data
+	Salt           string `json:"salt"`           // salt for client to use
+	StorageVersion int    `json:"storageVersion"` // specifies how data is encrypted/stored (1 = legacy, 2 = new)
 }
 
 type DocumentRequest struct {
@@ -37,10 +36,9 @@ func NewDocumentController(
 		headers := make([]ResponseHeader, 0)
 
 		responseBody, err := marshalResponse(DocumentResponse{
-			Document:             string(document.Data),
-			Salt:                 string(document.Salt),
-			ClientStorageVersion: document.ClientVersion,
-			ServerStorageVersion: document.ServerVersion,
+			Document:       string(document.Data),
+			Salt:           string(document.Salt),
+			StorageVersion: document.StorageVersion,
 		})
 
 		if err != nil {
@@ -82,18 +80,41 @@ func NewDocumentController(
 				return responseForError(err)
 			}
 
+			document, err := service.GetDocument(request.Context)
+			if err != nil {
+				return responseForError(err)
+			}
+
+			responseBody, err := marshalResponse(DocumentResponse{
+				Document:       string(document.Data),
+				Salt:           string(document.Salt),
+				StorageVersion: document.StorageVersion,
+			})
+			if err != nil {
+				return responseForError(err)
+			}
+
 			headers := make([]ResponseHeader, 0)
 			headers = append(headers, cookieHelper.SetSessionCookieHeader(sessionToken))
 
-			return ApiResponse{202, headers, emptyBody, ""}
+			return ApiResponse{202, headers, responseBody, ""}
 		}
 
-		err = service.UpdateDocument(request.Context, parsedBody.Document)
+		document, err := service.UpdateDocument(request.Context, parsedBody.Document)
 		if err != nil {
 			return responseForError(err)
 		}
 
-		return ApiResponse{202, emptyHeaders, emptyBody, ""}
+		responseBody, err := marshalResponse(DocumentResponse{
+			Document:       string(document.Data),
+			Salt:           string(document.Salt),
+			StorageVersion: document.StorageVersion,
+		})
+		if err != nil {
+			return responseForError(err)
+		}
+
+		return ApiResponse{202, emptyHeaders, responseBody, ""}
 	}
 
 	// DELETE /document

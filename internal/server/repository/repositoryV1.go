@@ -222,7 +222,7 @@ func (r *V1) GetUser(auth model.Auth) (*model.User, error) {
 	return &model.User{
 		Username:   auth.Username,
 		Auth:       auth,
-		Metadata:   model.UserMetadata{ClientStorageVersion: 1, ServerStorageVersion: 1},
+		Metadata:   model.UserMetadata{StorageVersion: 1},
 		ServerSalt: salt,
 		Document:   document,
 	}, nil

@@ -11,6 +11,20 @@ import (
 	"github.com/ClintonMorrison/lorikeet/internal/server/session"
 )
 
+type Document struct {
+	Data           []byte
+	Salt           []byte
+	StorageVersion int
+}
+
+func adaptUserToDocument(user *model.User) Document {
+	return Document{
+		Data:           user.Document,
+		Salt:           user.ClientSalt,
+		StorageVersion: user.Metadata.StorageVersion,
+	}
+}
+
 type DocumentService struct {
 	repo            repository.UserRepository
 	recaptchaClient *recaptcha.Client
@@ -104,16 +118,16 @@ func (s *DocumentService) CreateDocument(context model.RequestContext, document 
 	return session.SessionToken, nil
 }
 
-func (s *DocumentService) UpdateDocument(context model.RequestContext, document string) error {
+func (s *DocumentService) UpdateDocument(context model.RequestContext, document string) (Document, error) {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return errors.INVALID_CREDENTIALS
+		return Document{}, errors.INVALID_CREDENTIALS
 	}
 
 	// Validate session
 	auth, err := s.authFromSession(context)
 	if err != nil {
-		return err
+		return Document{}, err
 	}
 
 	s.userLockTable.Lock(auth.Username)
@@ -121,23 +135,16 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return errors.INVALID_CREDENTIALS
+		return Document{}, errors.INVALID_CREDENTIALS
 	}
 
-	_, err = s.repo.UpdateUser(user, model.UserUpdate{Document: []byte(document)})
+	user, err = s.repo.UpdateUser(user, model.UserUpdate{Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
-		return errors.SERVER_ERROR
+		return Document{}, errors.SERVER_ERROR
 	}
 
-	return nil
-}
-
-type Document struct {
-	Data          []byte
-	Salt          []byte
-	ClientVersion int
-	ServerVersion int
+	return adaptUserToDocument(user), nil
 }
 
 func (s *DocumentService) GetDocument(context model.RequestContext) (Document, error) {
@@ -159,12 +166,7 @@ func (s *DocumentService) GetDocument(context model.RequestContext) (Document, e
 		return Document{}, errors.INVALID_CREDENTIALS
 	}
 
-	document := Document{
-		Data:          user.Document,
-		Salt:          user.ClientSalt,
-		ClientVersion: user.Metadata.ClientStorageVersion,
-		ServerVersion: user.Metadata.ServerStorageVersion,
-	}
+	document := adaptUserToDocument(user)
 
 	return document, nil
 }

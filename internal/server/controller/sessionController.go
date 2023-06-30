@@ -8,7 +8,6 @@ import (
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 	"github.com/ClintonMorrison/lorikeet/internal/server/lockout"
 	"github.com/ClintonMorrison/lorikeet/internal/server/service"
-	"github.com/ClintonMorrison/lorikeet/internal/utils"
 )
 
 type SessionRequest struct {
@@ -47,8 +46,7 @@ func NewSessionController(
 		headers = append(headers, cookieHelper.SetSessionCookieHeader(token))
 
 		response := SessionResponse{
-			// TODO: may not be needed
-			Salt: utils.EncodeAsBase64(user.ClientSalt),
+			Salt: string(user.ClientSalt),
 		}
 
 		body, err := json.Marshal(response)
