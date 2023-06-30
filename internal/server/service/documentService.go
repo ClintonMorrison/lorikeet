@@ -202,15 +202,15 @@ func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
 	return nil
 }
 
-func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext, newPassword string, document string) (string, error) {
+func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext, newPassword string, document string) (Document, string, error) {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return "", errors.INVALID_CREDENTIALS
+		return Document{}, "", errors.INVALID_CREDENTIALS
 	}
 
 	auth, err := s.authFromSession(context)
 	if err != nil {
-		return "", err
+		return Document{}, "", err
 	}
 
 	s.userLockTable.Lock(auth.Username)
@@ -218,28 +218,28 @@ func (s *DocumentService) UpdateDocumentAndPassword(context model.RequestContext
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return "", errors.INVALID_CREDENTIALS
+		return Document{}, "", errors.INVALID_CREDENTIALS
 	}
 
 	user, err = s.repo.UpdateUser(user, model.UserUpdate{Password: newPassword, Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
-		return "", errors.SERVER_ERROR
+		return Document{}, "", errors.SERVER_ERROR
 	}
 
 	// Grant session for new user
 	session, err := s.sessionTable.Grant(user.Username, user.Auth.Ip, user.Auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
-		return "", err
+		return Document{}, "", err
 	}
 
 	if err != nil {
 		s.logError(err)
-		return "", errors.SERVER_ERROR
+		return Document{}, "", errors.SERVER_ERROR
 	}
 
-	return session.SessionToken, nil
+	return adaptUserToDocument(user), session.SessionToken, nil
 }
 
 func (s *DocumentService) logError(err error) {

@@ -84,12 +84,7 @@ func NewDocumentController(
 
 		// Update password if password was given
 		if len(parsedBody.Password) > 0 {
-			sessionToken, err := service.UpdateDocumentAndPassword(request.Context, parsedBody.Password, parsedBody.Document)
-			if err != nil {
-				return responseForError(err)
-			}
-
-			document, err := service.GetDocument(request.Context)
+			document, sessionToken, err := service.UpdateDocumentAndPassword(request.Context, parsedBody.Password, parsedBody.Document)
 			if err != nil {
 				return responseForError(err)
 			}
