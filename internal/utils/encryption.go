@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"io"
 )
@@ -29,7 +30,6 @@ func Encrypt(data []byte, hashedPassword []byte) ([]byte, error) {
 	block, err := aes.NewCipher(hashedPassword[:32])
 	if err != nil {
 		panic(err)
-		return make([]byte, 0), err
 	}
 
 	gcm, err := cipher.NewGCM(block)
@@ -62,4 +62,8 @@ func Decrypt(data []byte, hashedPassword []byte) []byte {
 		panic(err.Error())
 	}
 	return plaintext
+}
+
+func EncodeAsBase64(bytes []byte) string {
+	return base64.URLEncoding.EncodeToString(bytes)
 }

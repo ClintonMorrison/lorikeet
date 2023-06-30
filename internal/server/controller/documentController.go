@@ -10,7 +10,10 @@ import (
 )
 
 type DocumentResponse struct {
-	Document string `json:"document,omitempty"`
+	Document             string `json:"document"`             // encrypted password data
+	Salt                 string `json:"salt"`                 // salt for client to use
+	ClientStorageVersion int    `json:"clientStorageVersion"` // specifies which client encrypt algorithm was used
+	ServerStorageVersion int    `json:"serverStorageVersion"` // specifies how data is stored on sever (1 = legacy, 2 = new)
 }
 
 type DocumentRequest struct {
@@ -33,7 +36,13 @@ func NewDocumentController(
 
 		headers := make([]ResponseHeader, 0)
 
-		responseBody, err := marshalResponse(DocumentResponse{string(document)})
+		responseBody, err := marshalResponse(DocumentResponse{
+			Document:             string(document.Data),
+			Salt:                 string(document.Salt),
+			ClientStorageVersion: document.ClientVersion,
+			ServerStorageVersion: document.ServerVersion,
+		})
+
 		if err != nil {
 			return responseForError(err)
 		}

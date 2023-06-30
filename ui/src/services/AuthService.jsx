@@ -8,7 +8,6 @@ const PEPPER_2 = '7767B9225CF66B418DD2A39CBC4AA';
 
 export default class AuthService {
   constructor() {
-    this.document = null;
   }
 
   firstHash(password) {
@@ -36,11 +35,6 @@ export default class AuthService {
 
   setPassword(password) {
     sessionStorage.setItem('token', this.firstHash(password));
-  }
-
-  getServerTokenV2(password) {
-    console.log('called getServerTokenV2. username: <', this.getUsername(), "> and password ", password)
-    return generateServerToken({ username: this.getUsername(), password });
   }
 
   sessionExists() {
@@ -95,12 +89,4 @@ export default class AuthService {
     const encoded = btoa(`${username}:${decryptToken}`);
     return { 'Authorization': `Basic ${encoded}` };
   }
-}
-
-const generateServerToken = ({ username, password }) => {
-  return sha256(password + username + PEPPER_1).toString();
-}
-
-const generateClientToken = ({ username, password, salt }) => {
-  return sha256(password + username + salt + PEPPER_2).toString();
 }

@@ -2,6 +2,8 @@ import _ from 'lodash';
 import { downloadAsJSON, downloadAsCSV, downloadAsText } from "../utils/download";
 import moment from "moment/moment";
 
+const defaultEmptyDocument = { passwords: [] };
+
 export default class AuthService {
   constructor({ apiService, authService }) {
     this.apiService = apiService;
@@ -11,22 +13,23 @@ export default class AuthService {
   createDocument({ username, password, recaptchaResult }) {
     this.authService.setCredentials({ username, password });
 
-    const initialDocument = JSON.stringify({ passwords: [] });
-    const encryptedDocument = this.authService.encryptWithToken(initialDocument);
-
     return this.apiService.post("document", {
-      document: encryptedDocument,
+      document: '',
       password: this.authService.doubleHash(password),
-      passwordV2: this.authService.getServerTokenV2(password),
       recaptchaResult,
     }, this.authService.getRegisterHeaders());
   }
 
   loadDocument() {
     return this.apiService.get("document", {}, this.authService.getAuthedHeaders()).then(resp => {
-      const encryptedDocument = _.get(resp, "data.document") || '{}';
-      const decryptedDocument = this.authService.decryptWithToken(encryptedDocument);
+      const encryptedDocument = _.get(resp, "data.document") || '';
+
+      const decryptedDocument = encryptedDocument ?
+        this.authService.decryptWithToken(encryptedDocument) :
+        JSON.stringify(defaultEmptyDocument);
+
       this.document = JSON.parse(decryptedDocument);
+
       return this.document;
     }).catch(e => {
       this.apiService.handleAuthError(e);

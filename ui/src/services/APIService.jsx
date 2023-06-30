@@ -10,7 +10,8 @@ export default class APIService {
   }
 
   handleAuthError(error) {
-    if (error.response.status === 401) {
+    console.error(error);
+    if (error?.response?.status === 401) {
       this.authService.logout();
       setTimeout(() => window.location.assign('/login'), 500);
     }

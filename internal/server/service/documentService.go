@@ -133,15 +133,22 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 	return nil
 }
 
-func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, error) {
+type Document struct {
+	Data          []byte
+	Salt          []byte
+	ClientVersion int
+	ServerVersion int
+}
+
+func (s *DocumentService) GetDocument(context model.RequestContext) (Document, error) {
 	// Validate username
 	if !isUsernameValid(context.Username) {
-		return nil, errors.INVALID_CREDENTIALS
+		return Document{}, errors.INVALID_CREDENTIALS
 	}
 
 	auth, err := s.authFromSession(context)
 	if err != nil {
-		return nil, err
+		return Document{}, err
 	}
 
 	s.userLockTable.Lock(auth.Username)
@@ -149,10 +156,17 @@ func (s *DocumentService) GetDocument(context model.RequestContext) ([]byte, err
 
 	user, err := s.repo.GetUser(auth)
 	if err != nil {
-		return nil, errors.INVALID_CREDENTIALS
+		return Document{}, errors.INVALID_CREDENTIALS
 	}
 
-	return user.Document, nil
+	document := Document{
+		Data:          user.Document,
+		Salt:          user.ClientSalt,
+		ClientVersion: user.Metadata.ClientStorageVersion,
+		ServerVersion: user.Metadata.ServerStorageVersion,
+	}
+
+	return document, nil
 }
 
 func (s *DocumentService) DeleteDocument(context model.RequestContext) error {
