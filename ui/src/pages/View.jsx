@@ -20,7 +20,7 @@ export default class View extends React.Component {
     item.updated = moment().toISOString();
     item.lastUsed = moment().toISOString();
 
-    this.props.services.documentService.loadDocument().then(document => {
+    this.props.services.documentService.loadDocument().then(({ document }) => {
       const indexToUpdate = _.findIndex(document.passwords, { id });
       document.passwords[indexToUpdate] = item;
       return this.props.services.documentService.updateDocument({ document });
@@ -34,7 +34,7 @@ export default class View extends React.Component {
 
   deletePassword(password) {
     const { id } = password;
-    this.props.services.documentService.loadDocument().then(document => {
+    this.props.services.documentService.loadDocument().then(({ document }) => {
       const indexToDelete = _.findIndex(document.passwords, { id });
       document.passwords.splice(indexToDelete, 1);
       this.props.services.documentService.updateDocument({ document });
@@ -51,7 +51,7 @@ export default class View extends React.Component {
   }
 
   componentDidMount() {
-    return this.props.services.documentService.loadDocument().then(document => {
+    return this.props.services.documentService.loadDocument().then(({ document }) => {
       this.setState({ document });
     }).catch(() => {
       this.props.history.push("/logout");

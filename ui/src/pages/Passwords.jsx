@@ -41,7 +41,7 @@ export default class Passwords extends React.Component {
 
   updateLastUsedDate(id) {
     const { documentService } = this.props.services;
-    documentService.loadDocument().then(document => {
+    documentService.loadDocument().then(({ document }) => {
       const indexToUpdate = _.findIndex(document.passwords, { id });
       document.passwords[indexToUpdate].lastUsed = moment().toISOString();
       documentService.updateDocument({ document });
@@ -98,7 +98,7 @@ export default class Passwords extends React.Component {
     const id = uuid();
     const password = documentService.createPassword(id);
 
-    this.props.services.documentService.loadDocument().then(document => {
+    this.props.services.documentService.loadDocument().then(({ document }) => {
       document.passwords = [...document.passwords, password];
       return documentService.updateDocument({ document });
     }).then(() => {
@@ -115,7 +115,7 @@ export default class Passwords extends React.Component {
   }
 
   componentDidMount() {
-    return this.props.services.documentService.loadDocument().then(document => {
+    return this.props.services.documentService.loadDocument().then(({ document }) => {
       this.setState({ document });
     }).catch(() => {
       this.props.history.push("/logout");

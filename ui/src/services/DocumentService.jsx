@@ -38,7 +38,7 @@ export default class AuthService {
         JSON.stringify(defaultEmptyDocument);
 
       this.document = JSON.parse(decryptedDocument);
-      return this.document;
+      return { document: this.document, salt: this.salt, version: this.storageVersion };
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });
@@ -82,7 +82,7 @@ export default class AuthService {
   }
 
   updatePassword(password) {
-    return this.loadDocument().then(document => {
+    return this.loadDocument().then(({ document }) => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
       this.authService.setCredentials({ password, salt: resp.data.salt })
@@ -99,6 +99,6 @@ export default class AuthService {
 
     const extension = type === 'text' ? 'txt' : type;
 
-    this.loadDocument().then(document => handler(document, `passwords.${extension}`));
+    this.loadDocument().then(({ document }) => handler(document, `passwords.${extension}`));
   }
 }
