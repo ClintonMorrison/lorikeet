@@ -8,9 +8,13 @@ const specialChars = [
   '<', ',', '.', '>', '/', '?'
 ];
 
+export function isLocalDev() {
+  return window.location.host === 'dev.lorikeet.ca'; // skip some validation for local dev
+}
+
 
 export function validatePassword(password) {
-  const skipValidation = window.location.host === 'dev.lorikeet.ca'; // skip validation for local dev
+  const skipValidation = isLocalDev();
   const sufficientLength = password.length >= 8;
   const containsLower = _.some(password, c => c.toLowerCase() === c);
   const containsUpper = _.some(password, c => c.toUpperCase() === c);

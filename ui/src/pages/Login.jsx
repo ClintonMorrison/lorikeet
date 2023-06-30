@@ -4,6 +4,7 @@ import { Helmet } from "react-helmet-async";
 
 import TextField from '../components/forms/TextField';
 import ReCaptcha from '../components/ReCaptcha';
+import { isLocalDev } from '../utils/validation';
 
 export default class Login extends React.Component {
   constructor(props) {
@@ -16,6 +17,7 @@ export default class Login extends React.Component {
       recaptchaResult: "",
       resetRecaptcha: false,
       darkMode: props.services.preferencesService.isDarkModeEnabled(),
+      isLocalDev: isLocalDev(),
     };
   }
 
@@ -34,7 +36,7 @@ export default class Login extends React.Component {
       isOkay = false;
     }
 
-    if (!this.state.recaptchaResult) {
+    if (!this.state.recaptchaResult && !this.state.isLocalDev) {
       isOkay = false;
     }
 
@@ -132,7 +134,7 @@ export default class Login extends React.Component {
               <div className="input-field col s12">
                 <button
                   className="btn waves-effect waves-light"
-                  disabled={!this.state.recaptchaResult}
+                  disabled={!this.state.recaptchaResult && !this.state.isLocalDev}
                   type="submit"
                   name="action"
                   onClick={(e) => this.submit(e)}>

@@ -11,12 +11,13 @@ import (
 // See https://developers.google.com/recaptcha/docs/verify
 
 type Client struct {
-	debugLogger *log.Logger
-	secret      string
+	debugLogger       *log.Logger
+	secret            string
+	bypassForLocalDev bool
 }
 
-func NewClient(debugLogger *log.Logger, secret string) *Client {
-	return &Client{debugLogger, secret}
+func NewClient(debugLogger *log.Logger, secret string, bypassForLocalDev bool) *Client {
+	return &Client{debugLogger, secret, bypassForLocalDev}
 }
 
 type recaptchaValidationResponse struct {
@@ -50,6 +51,11 @@ func (rc *Client) Verify(recaptchaResponse string, ip string) bool {
 	if err != nil {
 		rc.debugLogger.Println("error unmarshalling recaptcha body: " + err.Error())
 		return false
+	}
+
+	if rc.bypassForLocalDev && !parsedResponse.Success {
+		rc.debugLogger.Println("Recaptcha was not valid, but bypassing check for local dev")
+		return true
 	}
 
 	return parsedResponse.Success

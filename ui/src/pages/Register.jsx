@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet-async";
 import TextField from '../components/forms/TextField';
 
 import './Register.scss';
-import { validatePassword } from "../utils/validation";
+import { isLocalDev, validatePassword } from "../utils/validation";
 import PasswordRequirements from "../components/PasswordRequirements";
 import ReCaptcha from '../components/ReCaptcha';
 
@@ -28,6 +28,7 @@ export default class Register extends React.Component {
         containsSpecial: true
       },
       darkMode: props.services.preferencesService.isDarkModeEnabled(),
+      isLocalDev: isLocalDev(),
     };
   }
 
@@ -54,7 +55,7 @@ export default class Register extends React.Component {
       isOkay = false;
     }
 
-    if (!this.state.recaptchaResult) {
+    if (!this.state.recaptchaResult && !this.state.isLocalDev) {
       isOkay = false;
     }
 
@@ -160,7 +161,7 @@ export default class Register extends React.Component {
                   className="btn waves-effect waves-light"
                   type="submit"
                   name="action"
-                  disabled={!this.state.recaptchaResult}
+                  disabled={!this.state.recaptchaResult && !this.state.isLocalDev}
                   onClick={(e) => this.submit(e)}>
                   Register
                 </button>

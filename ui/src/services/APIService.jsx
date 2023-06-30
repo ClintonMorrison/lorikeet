@@ -5,7 +5,6 @@ export default class APIService {
     this.authService = authService;
 
     axios.defaults.baseURL = baseURL;
-    // axios.defaults.headers.common['Authorization'] = this.getAuthHeader();
     axios.defaults.headers.common['Accept'] = 'application/json';
   }
 

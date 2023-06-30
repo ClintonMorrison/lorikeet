@@ -55,6 +55,7 @@ func Run(
 	recaptchaClient := recaptcha.NewClient(
 		debugLogger,
 		recaptchaSecret,
+		localDev,
 	)
 	repository := repository.NewRepositoryV2(dataPath) // repository.NewRepositoryV1(dataPath)
 	lockoutTable := lockout.NewTable()
