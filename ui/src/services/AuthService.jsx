@@ -2,40 +2,60 @@ import AES from 'crypto-js/aes';
 import UTF_8 from 'crypto-js/enc-utf8';
 import _ from 'lodash';
 
+class StorageHelper {
+  getUsername() {
+    return sessionStorage.getItem('username');
+  }
+  setUsername(value) {
+    sessionStorage.setItem('username', value);
+  }
+
+  getClientTokenV1() {
+    return sessionStorage.getItem('token');
+  }
+  setClientTokenV1(value) {
+    return sessionStorage.setItem('token', value);
+  }
+}
+
+
 export default class AuthService {
   constructor({ encryptionService }) {
     this.encryptionService = encryptionService;
-  }
-
-  firstHash(password) {
-    const username = this.getUsername();
-    return this.encryptionService.generateClientEncryptTokenV1({ username, password });
+    this.storageHelper = new StorageHelper();
   }
 
   passwordMatchesSession(password) {
-    return password && this.firstHash(password) === this.getToken();
+    const username = this.getUsername();
+    const generatedClientTokenV1 = this.encryptionService.generateClientEncryptTokenV1({ username, password });
+
+    return password && generatedClientTokenV1 === this.getClientToken();
   }
 
   setCredentials({ username, password }) {
     if (username) {
-      sessionStorage.setItem('username', _.trim(username));
+      this.storageHelper.setUsername(_.trim(username));
     }
 
     if (password) {
-      sessionStorage.setItem('token', this.firstHash(password));
+      const tokenV1 = this.encryptionService.generateClientEncryptTokenV1({
+        username: username || this.getUsername(),
+        password
+      });
+      this.storageHelper.setClientTokenV1(tokenV1);
     }
   }
 
   sessionExists() {
-    return !!(this.getUsername() && this.getToken());
+    return !!(this.getUsername() && this.getClientToken());
   }
 
   getUsername() {
-    return sessionStorage.getItem('username');
+    return this.storageHelper.getUsername();
   }
 
-  getToken() {
-    return sessionStorage.getItem('token');
+  getClientToken() {
+    return this.storageHelper.getClientTokenV1();
   }
 
   logout() {
@@ -52,7 +72,7 @@ export default class AuthService {
       return this.encryptionService.generateServerEncryptTokenV1({ username, password });
     }
 
-    const token = this.getToken();
+    const token = this.getClientToken();
     if (!token) {
       return null;
     }
@@ -61,15 +81,17 @@ export default class AuthService {
   }
 
   encrypt({ text, password }) {
+    const username = this.getUsername();
+
     const token = password ?
-      this.firstHash(password) : // TODO
-      this.getToken();
+      this.encryptionService.generateClientEncryptTokenV1({ username, password }) :
+      this.getClientToken();
 
     return AES.encrypt(text, token).toString();
   }
 
   decrypt({ text }) {
-    const token = this.getToken();
+    const token = this.getClientToken();
     return AES.decrypt(text, token).toString(UTF_8);
   }
 
