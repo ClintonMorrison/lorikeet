@@ -15,7 +15,7 @@ export default class AuthService {
 
     return this.apiService.post("document", {
       document: '',
-      password: this.authService.doubleHash(password),
+      password: this.authService.getServerToken({ password }),
       recaptchaResult,
     }, this.authService.getRegisterHeaders());
   }
@@ -25,7 +25,7 @@ export default class AuthService {
       const encryptedDocument = _.get(resp, "data.document") || '';
 
       const decryptedDocument = encryptedDocument ?
-        this.authService.decryptWithToken(encryptedDocument) :
+        this.authService.decrypt({ text: encryptedDocument }) :
         JSON.stringify(defaultEmptyDocument);
 
       this.document = JSON.parse(decryptedDocument);
@@ -40,12 +40,12 @@ export default class AuthService {
     const unencryptedDocument = JSON.stringify(document);
 
     const encryptedDocument = password ?
-      this.authService.encryptWithUpdatedPassword(unencryptedDocument, password) :
-      this.authService.encryptWithToken(unencryptedDocument);
+      this.authService.encrypt({ text: unencryptedDocument, password }) :
+      this.authService.encrypt({ text: unencryptedDocument });
 
     return this.apiService.put("document", {
       document: encryptedDocument,
-      password: password ? this.authService.doubleHash(password) : undefined
+      password: password ? this.authService.getServerToken({ password }) : undefined
     }, this.authService.getAuthedHeaders());
   }
 
@@ -75,7 +75,7 @@ export default class AuthService {
     return this.loadDocument().then(document => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
-      this.authService.setPassword(password)
+      this.authService.setCredentials({ password })
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });

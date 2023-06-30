@@ -7,7 +7,7 @@ export default class AuthService {
 
   createSession({ recaptchaResult }) {
     const username = this.authService.getUsername();
-    const decryptToken = this.authService.getHashedToken();
+    const decryptToken = this.authService.getServerToken();
 
     return this.apiService.post("session", {
       username,

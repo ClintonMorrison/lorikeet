@@ -14,8 +14,8 @@ export default class EncryptionService {
   }
 
   // Either password or clientEncryptToken is required
-  generateServerEncryptTokenV1({ username, password, clientEncryptToken }) {
-    let t1 = clientEncryptToken;
+  generateServerEncryptTokenV1({ username, password, token }) {
+    let t1 = token;
     if (!t1) {
       t1 = this.generateClientEncryptTokenV1({ username, password });
     }

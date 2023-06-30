@@ -1,27 +1,15 @@
-import sha256 from 'crypto-js/sha256';
 import AES from 'crypto-js/aes';
 import UTF_8 from 'crypto-js/enc-utf8';
 import _ from 'lodash';
 
-const PEPPER_1 = 'CC352C99A14616AD22678563ECDA5';
-const PEPPER_2 = '7767B9225CF66B418DD2A39CBC4AA';
-
 export default class AuthService {
-  constructor() {
+  constructor({ encryptionService }) {
+    this.encryptionService = encryptionService;
   }
 
   firstHash(password) {
     const username = this.getUsername();
-    return sha256(password + username + PEPPER_1).toString();
-  }
-
-  secondHash(token) {
-    const username = this.getUsername();
-    return sha256(token + username + PEPPER_2).toString();
-  }
-
-  doubleHash(password) {
-    return this.secondHash(this.firstHash(password));
+    return this.encryptionService.generateClientEncryptTokenV1({ username, password });
   }
 
   passwordMatchesSession(password) {
@@ -29,12 +17,13 @@ export default class AuthService {
   }
 
   setCredentials({ username, password }) {
-    sessionStorage.setItem('username', _.trim(username));
-    this.setPassword(password);
-  }
+    if (username) {
+      sessionStorage.setItem('username', _.trim(username));
+    }
 
-  setPassword(password) {
-    sessionStorage.setItem('token', this.firstHash(password));
+    if (password) {
+      sessionStorage.setItem('token', this.firstHash(password));
+    }
   }
 
   sessionExists() {
@@ -53,26 +42,33 @@ export default class AuthService {
     sessionStorage.clear();
   }
 
-  getHashedToken() {
+  getServerToken({ password } = {}) {
+    const username = this.getUsername();
+    if (!username) {
+      return null;
+    }
+
+    if (password) {
+      return this.encryptionService.generateServerEncryptTokenV1({ username, password });
+    }
+
     const token = this.getToken();
     if (!token) {
       return null;
     }
 
-    return this.secondHash(token);
+    return this.encryptionService.generateServerEncryptTokenV1({ username, token });
   }
 
-  encryptWithToken(text) {
-    const token = this.getToken();
+  encrypt({ text, password }) {
+    const token = password ?
+      this.firstHash(password) : // TODO
+      this.getToken();
+
     return AES.encrypt(text, token).toString();
   }
 
-  encryptWithUpdatedPassword(text, updatedPassword) {
-    const token = this.firstHash(updatedPassword);
-    return AES.encrypt(text, token).toString();
-  }
-
-  decryptWithToken(text) {
+  decrypt({ text }) {
     const token = this.getToken();
     return AES.decrypt(text, token).toString(UTF_8);
   }
@@ -85,7 +81,7 @@ export default class AuthService {
 
   getRegisterHeaders() {
     const username = this.getUsername();
-    const decryptToken = this.getHashedToken();
+    const decryptToken = this.getServerToken();
     const encoded = btoa(`${username}:${decryptToken}`);
     return { 'Authorization': `Basic ${encoded}` };
   }
