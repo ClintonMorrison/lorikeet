@@ -24,7 +24,7 @@ export default class AuthService {
 
   passwordMatchesSession(password) {
     const username = this.getUsername();
-    const generatedClientTokenV1 = this.encryptionService.generateClientEncryptTokenV1({ username, password });
+    const generatedClientTokenV1 = this.getClientToken({ username, password });
 
     return password && generatedClientTokenV1 === this.getClientToken();
   }
@@ -35,7 +35,7 @@ export default class AuthService {
     }
 
     if (password) {
-      const tokenV1 = this.encryptionService.generateClientEncryptTokenV1({
+      const tokenV1 = this.getClientToken({
         username: username || this.getUsername(),
         password
       });
@@ -51,12 +51,16 @@ export default class AuthService {
     return this.storageHelper.getUsername();
   }
 
-  getClientToken() {
-    return this.storageHelper.getClientTokenV1();
-  }
-
   logout() {
     sessionStorage.clear();
+  }
+
+  getClientToken({ username, password } = {}) {
+    if (username && password) {
+      return this.encryptionService.generateClientEncryptTokenV1({ username, password })
+    }
+
+    return this.storageHelper.getClientTokenV1();
   }
 
   getServerToken({ password } = {}) {
@@ -81,7 +85,7 @@ export default class AuthService {
     const username = this.getUsername();
 
     const secret = password ?
-      this.encryptionService.generateClientEncryptTokenV1({ username, password }) :
+      this.getClientToken({ username, password }) :
       this.getClientToken();
 
     return this.encryptionService.encrypt({ text, secret });
