@@ -27,7 +27,7 @@ func NewRepositoryV2(baseDataPath string) *V2 {
 	}
 }
 
-func (r *V2) CreateDataDirectory() {
+func (r *V2) InitialSetup() {
 	err := storage.CreateDirectory(r.dataPath)
 
 	if err != nil {

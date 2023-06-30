@@ -57,7 +57,7 @@ func Run(
 		recaptchaSecret,
 		localDev,
 	)
-	repository := repository.NewRepositoryV2(dataPath) // repository.NewRepositoryV1(dataPath)
+	repository := repository.NewHybridRepository(dataPath)
 	lockoutTable := lockout.NewTable()
 	sessionTable := session.NewTable()
 	userLockTable := service.NewUserLockTable()
@@ -76,7 +76,7 @@ func Run(
 		errorLogger,
 	)
 
-	repository.CreateDataDirectory()
+	repository.InitialSetup()
 
 	documentController := controller.NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
 	http.HandleFunc(documentApiPath, documentController.Handle)

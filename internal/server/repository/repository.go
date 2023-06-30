@@ -8,4 +8,5 @@ type UserRepository interface {
 	GetUser(model.Auth) (*model.User, error)
 	UpdateUser(*model.User, model.UserUpdate) (*model.User, error)
 	DeleteUser(*model.User) error
+	InitialSetup()
 }
