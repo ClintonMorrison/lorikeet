@@ -11,11 +11,14 @@ import SessionService from "./services/SessionService";
 
 import './App.scss';
 import PreferencesService from './services/PreferencesService';
+import EncryptionService from './services/EncryptionService';
 
 const helmetContext = {}
 
 // Instantiate services
-const authService = new AuthService();
+const encryptionService = new EncryptionService();
+
+const authService = new AuthService({ encryptionService });
 
 const apiService = new APIService({
   authService,
