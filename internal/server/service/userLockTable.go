@@ -16,6 +16,9 @@ func NewUserLockTable() *UserLockTable {
 }
 
 func (t *UserLockTable) getLockForUser(username string) *sync.RWMutex {
+	t.lockMux.Lock()
+	defer t.lockMux.Unlock()
+
 	if t.lockByUser[username] == nil {
 		t.lockByUser[username] = &sync.RWMutex{}
 	}
@@ -24,17 +27,9 @@ func (t *UserLockTable) getLockForUser(username string) *sync.RWMutex {
 }
 
 func (t *UserLockTable) Lock(username string) {
-	t.lockMux.Lock()
-	defer t.lockMux.Unlock()
-
-	lock := t.getLockForUser(username)
-	lock.Lock()
+	t.getLockForUser(username).Lock()
 }
 
 func (t *UserLockTable) Unlock(username string) {
-	t.lockMux.Lock()
-	defer t.lockMux.Unlock()
-
-	lock := t.getLockForUser(username)
-	lock.Unlock()
+	t.getLockForUser(username).Unlock()
 }
