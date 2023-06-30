@@ -12,9 +12,10 @@ import (
 )
 
 type Document struct {
-	Data           []byte
-	Salt           []byte
-	StorageVersion int
+	Data               []byte
+	Salt               []byte
+	StorageVersion     int
+	UpdatedAccessToken string
 }
 
 func adaptUserToDocument(user *model.User) Document {
@@ -75,47 +76,49 @@ func (s *DocumentService) authFromSession(context model.RequestContext) (model.A
 	return context.ToAuth(session.DecryptToken), nil
 }
 
-func (s *DocumentService) CreateDocument(context model.RequestContext, document string, recaptchaResponse string) (string, error) {
+func (s *DocumentService) CreateDocument(context model.RequestContext, document string, recaptchaResponse string) (Document, string, error) {
 	auth := context.ToAuth(context.Password)
 
 	// Validate username
 	if !isUsernameValid(auth.Username) {
-		return "", errors.USERNAME_INVALID
+		return Document{}, "", errors.USERNAME_INVALID
 	}
 
 	// Validate recaptcha
 	recaptchaValid := s.recaptchaClient.Verify(recaptchaResponse, auth.Ip)
 	if !recaptchaValid {
 		s.errorLogger.Println("Recaptcha was not valid")
-		return "", errors.INVALID_CREDENTIALS
+		return Document{}, "", errors.INVALID_CREDENTIALS
 	}
 
+	// Validate user name is free
 	s.userLockTable.Lock(auth.Username)
 	defer s.userLockTable.Unlock(auth.Username)
 
 	err := s.checkUserNameFree(auth)
 	if err != nil {
-		return "", err
+		return Document{}, "", err
 	}
 
-	_, err = s.repo.CreateUser(auth, []byte(document))
+	// Create the user
+	user, err := s.repo.CreateUser(auth, []byte(document))
 	if err != nil {
 		s.logError(err)
-		return "", errors.SERVER_ERROR
+		return Document{}, "", errors.SERVER_ERROR
 	}
 
 	// Grant session for new user
 	session, err := s.sessionTable.Grant(auth.Username, auth.Ip, auth.Password)
 	if err != nil {
 		s.errorLogger.Println("Error granting user session")
-		return "", err
+		return Document{}, "", err
 	}
 	if err != nil {
 		s.logError(err)
-		return "", errors.SERVER_ERROR
+		return Document{}, "", errors.SERVER_ERROR
 	}
 
-	return session.SessionToken, nil
+	return adaptUserToDocument(user), session.SessionToken, nil
 }
 
 func (s *DocumentService) UpdateDocument(context model.RequestContext, document string) (Document, error) {

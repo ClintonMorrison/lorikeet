@@ -55,7 +55,16 @@ func NewDocumentController(
 			return responseForError(err)
 		}
 
-		sessionToken, err := service.CreateDocument(request.Context, parsedBody.Document, parsedBody.RecaptchaResult)
+		document, sessionToken, err := service.CreateDocument(request.Context, parsedBody.Document, parsedBody.RecaptchaResult)
+		if err != nil {
+			return responseForError(err)
+		}
+
+		responseBody, err := marshalResponse(DocumentResponse{
+			Document:       string(document.Data),
+			Salt:           string(document.Salt),
+			StorageVersion: document.StorageVersion,
+		})
 		if err != nil {
 			return responseForError(err)
 		}
@@ -63,7 +72,7 @@ func NewDocumentController(
 		headers := make([]ResponseHeader, 0)
 		headers = append(headers, cookieHelper.SetSessionCookieHeader(sessionToken))
 
-		return ApiResponse{201, headers, emptyBody, ""}
+		return ApiResponse{201, headers, responseBody, ""}
 	}
 
 	// PUT /document
