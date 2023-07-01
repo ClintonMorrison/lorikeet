@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from "react-helmet-async";
+import MigrationNote from '../components/MigrationNote';
 
 export default class About extends React.Component {
   render() {
@@ -10,6 +11,10 @@ export default class About extends React.Component {
         </Helmet>
 
         <h1>About</h1>
+
+        <div className="row">
+          <MigrationNote />
+        </div>
 
         <p>
           Lorikeet is a personal project created by <a href="https://clintonmorrison.com">Clinton Morrison</a>{' '}
@@ -68,8 +73,7 @@ export default class About extends React.Component {
         <p>
           If you have feedback, suggestions, or comments, we would love to hear from you.
           You can send us an email at{' '}
-          <a href="mailto:clintonmorrison2@gmail.com">clintonmorrison2@gmail.com</a>.
-          You can also reach out on <a href="https://twitter.com/clint_morrison">Twitter</a>.
+          <a href="mailto:contact@lorikeet.ca">contact@lorikeet.ca</a>.
         </p>
 
         <h2>Support Us</h2>

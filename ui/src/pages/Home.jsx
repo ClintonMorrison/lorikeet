@@ -7,6 +7,7 @@ import MainLogo from "../components/icons/MainLogo";
 import Heart from "../components/icons/Heart";
 import Bloom from "../components/icons/Bloom";
 import PadLock from "../components/icons/PadLock";
+import MigrationNote from '../components/MigrationNote';
 
 export default function Home({ services }) {
 
@@ -29,7 +30,6 @@ export default function Home({ services }) {
         <h1>Lorikeet</h1>
         <p className="subtitle">A secure online password manager.</p>
       </div>
-
 
       <div className="row">
         <div className="col s12 m4">
@@ -64,6 +64,9 @@ export default function Home({ services }) {
         </div>
       </div>
       {cta}
+      <div className="row">
+        <MigrationNote />
+      </div>
     </div>
   );
 }

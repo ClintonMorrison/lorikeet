@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="container">
         <div className="row">
           <div className="col s8 links">
-            <span className="item grey-text text-lighten-3">© 2019</span>
+            <span className="item grey-text text-lighten-3">© 2023</span>
             <a className="item grey-text text-lighten-3" href="/terms">Terms of Service</a>
             <a className="item grey-text text-lighten-3" href="/privacy">Privacy Statement</a>
             <a className="item grey-text text-lighten-3" href="/change-log">Change Log</a>

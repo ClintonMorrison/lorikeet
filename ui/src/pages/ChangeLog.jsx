@@ -16,7 +16,7 @@ export default class ChangeLog extends React.Component {
           <li>security improvements</li>
           <li>bug fixes</li>
           <li>updated assets</li>
-          <li>posted notice about account migration</li>
+          <li>posted notice about inactive account removal</li>
         </ul>
 
 

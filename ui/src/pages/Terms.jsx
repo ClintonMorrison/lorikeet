@@ -68,6 +68,14 @@ export default class Terms extends React.Component {
           For any such changes, we will provide 30 days notice on the website.
           By continuing to use the service you agree to these new terms.
         </p>
+
+        <h2>Inactive Account Removal</h2>
+        <p>
+          On June 30, 2023 we posted a notice that inactive Lorikeet accounts will be removed. Users will have until September 1, 2023 to sign in to their account.
+        </p>
+        <p>
+          Any accounts that were not accessed between June 30, 2023 and September 1, 2023 will be removed.
+        </p>
       </div>
     );
 
