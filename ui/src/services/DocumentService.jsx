@@ -65,6 +65,7 @@ export default class AuthService {
       document: encryptedDocument,
       password: password ? this.authService.getServerToken({ password }) : undefined,
       migrate,
+      clientEncryptVersion: version,
     }, this.authService.getAuthedHeaders());
   }
 

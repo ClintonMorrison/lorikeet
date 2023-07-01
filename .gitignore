@@ -12,6 +12,7 @@
 *.out
 
 data/
+data_old/
 .idea/
 node_modules/
 backup/

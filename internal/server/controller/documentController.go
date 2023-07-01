@@ -17,10 +17,11 @@ type DocumentResponse struct {
 }
 
 type DocumentRequest struct {
-	Password        string `json:"password,omitempty"`
-	Document        string `json:"document"`
-	RecaptchaResult string `json:"recaptchaResult"`
-	Migrate         bool   `json:"migrate"`
+	Password             string `json:"password,omitempty"`
+	Document             string `json:"document"`
+	RecaptchaResult      string `json:"recaptchaResult"`
+	Migrate              bool   `json:"migrate"`
+	ClientEncryptVersion int    `json:"clientEncryptVersion"`
 }
 
 func NewDocumentController(
