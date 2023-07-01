@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/ClintonMorrison/lorikeet/internal/model"
 )
 
@@ -86,6 +88,36 @@ func (r *HybridRepository) DeleteUser(user *model.User) error {
 
 }
 
+func (r *HybridRepository) MigrateUser(user *model.User) (*model.User, error) {
+	// Check if user exists on v2 already (do nothing if so)
+	existsOnV2, err := r.userExistsOnV2(user.Auth)
+	if err != nil {
+		return nil, err
+	}
+
+	if existsOnV2 {
+		return user, nil
+	}
+
+	// Verify user exists on v1
+	existsOnV1, err := r.userExistsOnV1(user.Auth)
+	if err != nil {
+		return nil, err
+	}
+
+	if !existsOnV1 {
+		return nil, fmt.Errorf("Cannot migrate because user not on v1")
+	}
+
+	// Recreate user on v2
+	newUser, err := r.v2.CreateUser(user.Auth, user.Document)
+	if err != nil {
+		return nil, err
+	}
+
+	return newUser, nil
+}
+
 func (r *HybridRepository) InitialSetup() {
 	r.v1.InitialSetup()
 	r.v2.InitialSetup()
@@ -93,5 +125,10 @@ func (r *HybridRepository) InitialSetup() {
 
 func (r *HybridRepository) userExistsOnV2(auth model.Auth) (bool, error) {
 	available, err := r.v2.IsUsernameAvailable(auth)
+	return !available, err
+}
+
+func (r *HybridRepository) userExistsOnV1(auth model.Auth) (bool, error) {
+	available, err := r.v1.IsUsernameAvailable(auth)
 	return !available, err
 }

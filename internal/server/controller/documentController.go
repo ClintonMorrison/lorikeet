@@ -10,15 +10,17 @@ import (
 )
 
 type DocumentResponse struct {
-	Document       string `json:"document"`       // encrypted password data
-	Salt           string `json:"salt"`           // salt for client to use
-	StorageVersion int    `json:"storageVersion"` // specifies how data is encrypted/stored (1 = legacy, 2 = new)
+	Document             string `json:"document"`             // encrypted password data
+	Salt                 string `json:"salt"`                 // salt for client to use
+	StorageVersion       int    `json:"storageVersion"`       // specifies how data is stored server-side (1 = legacy, 2 = new)
+	ClientEncryptVersion int    `json:"clientEncryptVersion"` // specifies how client will encrypt/decrypt data
 }
 
 type DocumentRequest struct {
 	Password        string `json:"password,omitempty"`
 	Document        string `json:"document"`
 	RecaptchaResult string `json:"recaptchaResult"`
+	Migrate         bool   `json:"migrate"`
 }
 
 func NewDocumentController(
@@ -35,12 +37,7 @@ func NewDocumentController(
 
 		headers := make([]ResponseHeader, 0)
 
-		responseBody, err := marshalResponse(DocumentResponse{
-			Document:       string(document.Data),
-			Salt:           string(document.Salt),
-			StorageVersion: document.StorageVersion,
-		})
-
+		responseBody, err := adaptDocumentToResponse(document)
 		if err != nil {
 			return responseForError(err)
 		}
@@ -60,11 +57,7 @@ func NewDocumentController(
 			return responseForError(err)
 		}
 
-		responseBody, err := marshalResponse(DocumentResponse{
-			Document:       string(document.Data),
-			Salt:           string(document.Salt),
-			StorageVersion: document.StorageVersion,
-		})
+		responseBody, err := adaptDocumentToResponse(document)
 		if err != nil {
 			return responseForError(err)
 		}
@@ -89,11 +82,7 @@ func NewDocumentController(
 				return responseForError(err)
 			}
 
-			responseBody, err := marshalResponse(DocumentResponse{
-				Document:       string(document.Data),
-				Salt:           string(document.Salt),
-				StorageVersion: document.StorageVersion,
-			})
+			responseBody, err := adaptDocumentToResponse(document)
 			if err != nil {
 				return responseForError(err)
 			}
@@ -104,21 +93,35 @@ func NewDocumentController(
 			return ApiResponse{202, headers, responseBody, ""}
 		}
 
-		document, err := service.UpdateDocument(request.Context, parsedBody.Document)
-		if err != nil {
-			return responseForError(err)
+		if parsedBody.Migrate {
+			document, err := service.MigrateDocument(request.Context)
+			if err != nil {
+				return responseForError(err)
+			}
+
+			responseBody, err := adaptDocumentToResponse(document)
+			if err != nil {
+				return responseForError(err)
+			}
+
+			return ApiResponse{202, emptyHeaders, responseBody, ""}
 		}
 
-		responseBody, err := marshalResponse(DocumentResponse{
-			Document:       string(document.Data),
-			Salt:           string(document.Salt),
-			StorageVersion: document.StorageVersion,
-		})
-		if err != nil {
-			return responseForError(err)
+		if len(parsedBody.Document) > 0 {
+			document, err := service.UpdateDocument(request.Context, parsedBody.Document)
+			if err != nil {
+				return responseForError(err)
+			}
+
+			responseBody, err := adaptDocumentToResponse(document)
+			if err != nil {
+				return responseForError(err)
+			}
+
+			return ApiResponse{202, emptyHeaders, responseBody, ""}
 		}
 
-		return ApiResponse{202, emptyHeaders, responseBody, ""}
+		return ApiResponse{400, emptyHeaders, emptyBody, ""}
 	}
 
 	// DELETE /document
@@ -160,4 +163,13 @@ func marshalResponse(response DocumentResponse) ([]byte, error) {
 		return emptyBody, errors.SERVER_ERROR
 	}
 	return jsonResponse, nil
+}
+
+func adaptDocumentToResponse(document service.Document) ([]byte, error) {
+	return marshalResponse(DocumentResponse{
+		Document:             string(document.Data),
+		Salt:                 string(document.Salt),
+		StorageVersion:       document.StorageVersion,
+		ClientEncryptVersion: document.ClientEncryptVersion,
+	})
 }

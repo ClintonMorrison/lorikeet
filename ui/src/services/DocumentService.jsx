@@ -9,12 +9,14 @@ export default class AuthService {
     this.apiService = apiService;
     this.authService = authService;
     this.storageVersion = 0;
+    this.clientEncryptVersion = 0;
     this.salt = null;
     this.document = null;
   }
 
   createDocument({ username, password, recaptchaResult }) {
     this.storageVersion = 2; // use new version for all new users
+    this.clientEncryptVersion = 2;
     this.authService.setCredentials({ username, password });
 
     return this.apiService.post("document", {
@@ -31,14 +33,20 @@ export default class AuthService {
     return this.apiService.get("document", {}, this.authService.getAuthedHeaders()).then(resp => {
       const encryptedDocument = _.get(resp, "data.document") || '';
       this.storageVersion = _.get(resp, 'data.storageVersion') || 1;
+      this.clientEncryptVersion = _.get(resp, 'data.clientEncryptVersion') || 1;
       this.salt = _.get(resp, 'data.salt') || '';
 
       const decryptedDocument = encryptedDocument ?
-        this.authService.decrypt({ text: encryptedDocument, version: this.storageVersion }) :
+        this.authService.decrypt({ text: encryptedDocument, version: this.clientEncryptVersion }) :
         JSON.stringify(defaultEmptyDocument);
 
       this.document = JSON.parse(decryptedDocument);
-      return { document: this.document, salt: this.salt, version: this.storageVersion };
+      return {
+        document: this.document,
+        salt: this.salt,
+        version: this.clientEncryptVersion,
+        needsMigration: this.storageVersion !== 2 || this.clientEncryptVersion !== 2
+      };
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });
@@ -46,7 +54,7 @@ export default class AuthService {
 
   updateDocument({ document, password, migrate }) {
     const unencryptedDocument = JSON.stringify(document);
-    const version = this.storageVersion;
+    const version = this.clientEncryptVersion;
     const salt = this.salt;
 
     const encryptedDocument = password ?
@@ -63,11 +71,12 @@ export default class AuthService {
   // Updates document from v1 to v2
   async migrateDocument({ document, password }) {
     const response = await this.updateDocument({ document, migrate: true });
-    this.storageVersion = response.storageVersion;
-    this.salt = response.salt;
+    this.storageVersion = response.data.storageVersion;
+    this.clientEncryptVersion = response.data.clientEncryptVersion;
+    this.salt = response.data.salt;
     this.authService.setCredentials({ password, salt: this.salt, });
 
-    if (this.storageVersion !== 2) {
+    if (this.storageVersion !== 2 || this.clientEncryptVersion !== 2) {
       throw new Error('Version not updated properly, aborting migration')
     }
 

@@ -1,9 +1,8 @@
 import React from 'react';
-
-import './MainLogo.scss';
+import ImageIcon from './ImageIcon';
 
 export default function MainLogo() {
   return (
-    <img className="cp-main-logo graphic" src="/bird_banner_v2.png" alt="" />
+    <ImageIcon src="/lorikeetbanner.png" />
   )
 }

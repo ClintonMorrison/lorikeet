@@ -12,17 +12,18 @@ import (
 )
 
 type Document struct {
-	Data               []byte
-	Salt               []byte
-	StorageVersion     int
-	UpdatedAccessToken string
+	Data                 []byte
+	Salt                 []byte
+	StorageVersion       int
+	ClientEncryptVersion int
 }
 
 func adaptUserToDocument(user *model.User) Document {
 	return Document{
-		Data:           user.Document,
-		Salt:           user.ClientSalt,
-		StorageVersion: user.Metadata.StorageVersion,
+		Data:                 user.Document,
+		Salt:                 user.ClientSalt,
+		StorageVersion:       user.Metadata.StorageVersion,
+		ClientEncryptVersion: user.Metadata.ClientEncryptVersion,
 	}
 }
 
@@ -144,6 +145,29 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 	user, err = s.repo.UpdateUser(user, model.UserUpdate{Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
+		return Document{}, errors.SERVER_ERROR
+	}
+
+	return adaptUserToDocument(user), nil
+}
+
+func (s *DocumentService) MigrateDocument(context model.RequestContext) (Document, error) {
+	// Validate session
+	auth, err := s.authFromSession(context)
+	if err != nil {
+		return Document{}, err
+	}
+
+	s.userLockTable.Lock(auth.Username)
+	defer s.userLockTable.Unlock(auth.Username)
+
+	user, err := s.repo.GetUser(auth)
+	if err != nil {
+		return Document{}, errors.INVALID_CREDENTIALS
+	}
+
+	user, err = s.repo.MigrateUser(user)
+	if err != nil {
 		return Document{}, errors.SERVER_ERROR
 	}
 
