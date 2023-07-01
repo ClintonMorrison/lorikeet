@@ -2,6 +2,7 @@ package service
 
 import (
 	"log"
+	"time"
 
 	"github.com/ClintonMorrison/lorikeet/internal/errors"
 	"github.com/ClintonMorrison/lorikeet/internal/model"
@@ -52,6 +53,13 @@ func (s *SessionService) GrantSession(auth model.Auth, recaptchaResponse string)
 	user, err := s.repository.GetUser(auth)
 	if err != nil {
 		s.errorLogger.Println("Auth in grant session request was not valid")
+		return "", nil, errors.INVALID_CREDENTIALS
+	}
+
+	// Update last accessed time
+	user, err = s.repository.UpdateUser(user, model.UserUpdate{LastAccessTime: time.Now()})
+	if err != nil {
+		s.errorLogger.Println("Failed to update lastAccessTime on user")
 		return "", nil, errors.INVALID_CREDENTIALS
 	}
 

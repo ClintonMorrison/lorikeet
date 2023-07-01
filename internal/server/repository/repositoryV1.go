@@ -274,7 +274,3 @@ func (r *V1) UpdateUser(user *model.User, update model.UserUpdate) (*model.User,
 
 	return updatedUser, nil
 }
-
-// TODO: add way to get sign up and last accessed dates from legacy user files?
-// Could be based on last modified dates
-// https://www.includehelp.com/golang/print-the-last-modified-time-of-an-existing-file.aspx#:~:text=In%20the%20main()%20function,using%20the%20ModTime()%20function.
