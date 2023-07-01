@@ -25,7 +25,7 @@ export default class AuthService {
       recaptchaResult,
     }, this.authService.getRegisterHeaders()).then(resp => {
       this.salt = _.get(resp, 'data.salt') || '';
-      this.authService.setCredentials({ password, salt: this.salt });
+      this.authService.setSalt({ password, salt: this.salt });
     });
   }
 
@@ -75,7 +75,7 @@ export default class AuthService {
     this.storageVersion = response.data.storageVersion;
     this.clientEncryptVersion = response.data.clientEncryptVersion;
     this.salt = response.data.salt;
-    this.authService.setCredentials({ password, salt: this.salt, });
+    this.authService.setSalt({ password, salt: this.salt, });
 
     if (this.storageVersion !== 2 || this.clientEncryptVersion !== 2) {
       throw new Error('Version not updated properly, aborting migration')
@@ -110,7 +110,7 @@ export default class AuthService {
     return this.loadDocument().then(({ document }) => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
-      this.authService.setCredentials({ password, salt: resp.data.salt })
+      this.authService.setSalt({ password, salt: resp.data.salt })
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });

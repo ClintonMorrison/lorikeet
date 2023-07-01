@@ -36,7 +36,7 @@ export default class AuthService {
     return password && generatedClientTokenV1 === this.getClientToken({ version: 1 });
   }
 
-  setCredentials({ username, password, salt }) {
+  setCredentials({ username, password }) {
     if (username) {
       this.storageHelper.setUsername(_.trim(username));
     }
@@ -48,16 +48,18 @@ export default class AuthService {
         version: 1,
       });
       this.storageHelper.setClientTokenV1(tokenV1);
+    }
+  }
 
-      if (salt) {
-        const tokenV2 = this.getClientToken({
-          username: username || this.getUsername(),
-          password,
-          salt,
-          version: 2,
-        });
-        this.storageHelper.setClientTokenV2(tokenV2);
-      }
+  setSalt({ password, salt }) {
+    if (salt) {
+      const tokenV2 = this.getClientToken({
+        username: this.getUsername(),
+        password,
+        salt,
+        version: 2,
+      });
+      this.storageHelper.setClientTokenV2(tokenV2);
     }
   }
 
