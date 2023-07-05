@@ -110,6 +110,7 @@ export default class AuthService {
     return this.loadDocument().then(({ document }) => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
+      this.authService.setCredentials({ password });
       this.authService.setSalt({ password, salt: resp.data.salt })
     }).catch(e => {
       this.apiService.handleAuthError(e);
