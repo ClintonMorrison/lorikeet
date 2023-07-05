@@ -1,11 +1,12 @@
 package main
 
 import (
-	"os"
-	"github.com/ClintonMorrison/lorikeet/internal/config"
-	"time"
-	"fmt"
 	"flag"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/ClintonMorrison/lorikeet/internal/config"
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 )
 
