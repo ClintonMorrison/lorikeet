@@ -28,7 +28,7 @@ func adaptUserToDocument(user *model.User) Document {
 }
 
 type DocumentService struct {
-	repo            repository.UserRepository
+	repo            *repository.UserRepository
 	recaptchaClient *recaptcha.Client
 	sessionTable    *session.Table
 	userLockTable   *UserLockTable
@@ -36,7 +36,7 @@ type DocumentService struct {
 }
 
 func NewDocumentService(
-	repository repository.UserRepository,
+	repository *repository.UserRepository,
 	recaptchaClient *recaptcha.Client,
 	sessionTable *session.Table,
 	userLockTable *UserLockTable,
@@ -145,29 +145,6 @@ func (s *DocumentService) UpdateDocument(context model.RequestContext, document 
 	user, err = s.repo.UpdateUser(user, model.UserUpdate{Document: []byte(document)})
 	if err != nil {
 		s.logError(err)
-		return Document{}, errors.SERVER_ERROR
-	}
-
-	return adaptUserToDocument(user), nil
-}
-
-func (s *DocumentService) MigrateDocument(context model.RequestContext) (Document, error) {
-	// Validate session
-	auth, err := s.authFromSession(context)
-	if err != nil {
-		return Document{}, err
-	}
-
-	s.userLockTable.Lock(auth.Username)
-	defer s.userLockTable.Unlock(auth.Username)
-
-	user, err := s.repo.GetUser(auth)
-	if err != nil {
-		return Document{}, errors.INVALID_CREDENTIALS
-	}
-
-	user, err = s.repo.MigrateUser(user)
-	if err != nil {
 		return Document{}, errors.SERVER_ERROR
 	}
 

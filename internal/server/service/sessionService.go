@@ -13,7 +13,7 @@ import (
 
 type SessionService struct {
 	recaptchaClient *recaptcha.Client
-	repository      repository.UserRepository
+	repository      *repository.UserRepository
 	sessionTable    *session.Table
 	userLockTable   *UserLockTable
 	errorLogger     *log.Logger
@@ -21,7 +21,7 @@ type SessionService struct {
 
 func NewSessionService(
 	recaptchaClient *recaptcha.Client,
-	repository repository.UserRepository,
+	repository *repository.UserRepository,
 	sessionTable *session.Table,
 	userLockTable *UserLockTable,
 	errorLogger *log.Logger,

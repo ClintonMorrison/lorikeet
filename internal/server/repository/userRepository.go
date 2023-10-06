@@ -10,16 +10,16 @@ import (
 	"github.com/ClintonMorrison/lorikeet/internal/storage"
 )
 
-type V2 struct {
+type UserRepository struct {
 	dataPath               string
 	userMetadataRepository UserMetadataRepository
 	saltRepository         SaltRepository
 	documentRepository     DocumentRepository
 }
 
-func NewRepositoryV2(baseDataPath string) *V2 {
+func NewUserRepository(baseDataPath string) *UserRepository {
 	dataPath := fmt.Sprintf("%s/v2", baseDataPath)
-	return &V2{
+	return &UserRepository{
 		dataPath:               dataPath,
 		userMetadataRepository: UserMetadataRepository{dataPath: dataPath},
 		saltRepository:         SaltRepository{dataPath: dataPath},
@@ -27,7 +27,7 @@ func NewRepositoryV2(baseDataPath string) *V2 {
 	}
 }
 
-func (r *V2) InitialSetup() {
+func (r *UserRepository) InitialSetup() {
 	err := storage.CreateDirectory(r.dataPath)
 
 	if err != nil {
@@ -35,17 +35,16 @@ func (r *V2) InitialSetup() {
 	}
 }
 
-func (r *V2) pathForUserFolder(auth model.Auth) string {
+func (r *UserRepository) pathForUserFolder(auth model.Auth) string {
 	return pathForUserFolder(r.dataPath, auth)
 }
 
-// NEW INTERFACE
-func (r *V2) IsUsernameAvailable(auth model.Auth) (bool, error) {
+func (r *UserRepository) IsUsernameAvailable(auth model.Auth) (bool, error) {
 	exists, err := r.saltRepository.Exists(auth)
 	return !exists, err
 }
 
-func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
+func (r *UserRepository) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 	// Create user folder
 	err := storage.CreateDirectory(r.pathForUserFolder(auth))
 	if err != nil {
@@ -86,7 +85,7 @@ func (r *V2) CreateUser(auth model.Auth, document []byte) (*model.User, error) {
 	return user, nil
 }
 
-func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
+func (r *UserRepository) GetUser(auth model.Auth) (*model.User, error) {
 	// Load salt
 	salts, err := r.saltRepository.Get(auth)
 	if err != nil {
@@ -120,7 +119,7 @@ func (r *V2) GetUser(auth model.Auth) (*model.User, error) {
 	}, nil
 }
 
-func (r *V2) DeleteUser(user *model.User) error {
+func (r *UserRepository) DeleteUser(user *model.User) error {
 	// Remove document
 	err := r.documentRepository.Remove(user.Auth, user.ServerSalt)
 	if err != nil {
@@ -148,7 +147,7 @@ func (r *V2) DeleteUser(user *model.User) error {
 	return nil
 }
 
-func (r *V2) UpdateUser(user *model.User, update model.UserUpdate) (*model.User, error) {
+func (r *UserRepository) UpdateUser(user *model.User, update model.UserUpdate) (*model.User, error) {
 	updatedUser := user
 
 	// Update password, if present

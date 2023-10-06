@@ -53,14 +53,8 @@ export default class Login extends React.Component {
         this.props.services.authService.setSalt({ password, salt: resp.data.salt });
         return this.props.services.documentService.loadDocument({ password });
       })
-      .then(({ document, needsMigration }) => {
-        if (needsMigration) {
-          return this.props.services.documentService.migrateDocument({ document, password }).then(() => {
-            this.props.history.push('/passwords');
-          })
-        } else {
-          this.props.history.push('/passwords');
-        }
+      .then(({ document }) => {
+        this.props.history.push('/passwords');
       })
       .catch(err => {
         this.resetRecaptcha();

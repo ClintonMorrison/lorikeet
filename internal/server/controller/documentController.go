@@ -20,7 +20,6 @@ type DocumentRequest struct {
 	Password             string `json:"password,omitempty"`
 	Document             string `json:"document"`
 	RecaptchaResult      string `json:"recaptchaResult"`
-	Migrate              bool   `json:"migrate"`
 	ClientEncryptVersion int    `json:"clientEncryptVersion"`
 }
 
@@ -76,7 +75,7 @@ func NewDocumentController(
 			return responseForError(err)
 		}
 
-		// Update password if password was given
+		// Update password if password was passed
 		if len(parsedBody.Password) > 0 {
 			document, sessionToken, err := service.UpdateDocumentAndPassword(request.Context, parsedBody.Password, parsedBody.Document)
 			if err != nil {
@@ -94,20 +93,7 @@ func NewDocumentController(
 			return ApiResponse{202, headers, responseBody, ""}
 		}
 
-		if parsedBody.Migrate {
-			document, err := service.MigrateDocument(request.Context)
-			if err != nil {
-				return responseForError(err)
-			}
-
-			responseBody, err := adaptDocumentToResponse(document)
-			if err != nil {
-				return responseForError(err)
-			}
-
-			return ApiResponse{202, emptyHeaders, responseBody, ""}
-		}
-
+		// Update document if document was passed
 		if len(parsedBody.Document) > 0 {
 			document, err := service.UpdateDocument(request.Context, parsedBody.Document)
 			if err != nil {

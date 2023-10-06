@@ -45,14 +45,13 @@ export default class AuthService {
         document: this.document,
         salt: this.salt,
         version: this.clientEncryptVersion,
-        needsMigration: this.storageVersion !== 2 || this.clientEncryptVersion !== 2
       };
     }).catch(e => {
       this.apiService.handleAuthError(e);
     });
   }
 
-  updateDocument({ document, password, migrate }) {
+  updateDocument({ document, password }) {
     const unencryptedDocument = JSON.stringify(document);
     const version = this.clientEncryptVersion;
     const salt = this.salt;
@@ -64,24 +63,8 @@ export default class AuthService {
     return this.apiService.put("document", {
       document: encryptedDocument,
       password: password ? this.authService.getServerToken({ password }) : undefined,
-      migrate,
       clientEncryptVersion: version,
     }, this.authService.getAuthedHeaders());
-  }
-
-  // Updates document from v1 to v2
-  async migrateDocument({ document, password }) {
-    const response = await this.updateDocument({ document, migrate: true });
-    this.storageVersion = response.data.storageVersion;
-    this.clientEncryptVersion = response.data.clientEncryptVersion;
-    this.salt = response.data.salt;
-    this.authService.setSalt({ password, salt: this.salt, });
-
-    if (this.storageVersion !== 2 || this.clientEncryptVersion !== 2) {
-      throw new Error('Version not updated properly, aborting migration')
-    }
-
-    return await this.updateDocument({ document, password });
   }
 
   deleteDocument() {

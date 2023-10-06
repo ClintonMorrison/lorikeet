@@ -57,7 +57,7 @@ func Run(
 		recaptchaSecret,
 		localDev,
 	)
-	repository := repository.NewHybridRepository(dataPath)
+	repository := repository.NewUserRepository(dataPath)
 	lockoutTable := lockout.NewTable()
 	sessionTable := session.NewTable()
 	userLockTable := service.NewUserLockTable()
