@@ -5,7 +5,6 @@ import { Helmet } from "react-helmet-async";
 import TextField from '../components/forms/TextField';
 import ReCaptcha from '../components/ReCaptcha';
 import { isLocalDev } from '../utils/validation';
-import MigrationNote from '../components/MigrationNote';
 
 export default class Login extends React.Component {
   constructor(props) {
@@ -148,9 +147,6 @@ export default class Login extends React.Component {
           </form>
         </div>
 
-        <div className="row">
-          <MigrationNote />
-        </div>
       </div>
     );
 

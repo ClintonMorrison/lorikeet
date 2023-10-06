@@ -11,6 +11,11 @@ export default class ChangeLog extends React.Component {
 
         <h1>Change Log</h1>
 
+        <h2>Saturday, Oct 7, 2023</h2>
+        <ul className="browser-default">
+          <li>security improvements</li>
+        </ul>
+
         <h2>Friday, June 30, 2023</h2>
         <ul className="browser-default">
           <li>security improvements</li>

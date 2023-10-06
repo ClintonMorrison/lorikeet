@@ -7,7 +7,6 @@ import MainLogo from "../components/icons/MainLogo";
 import Heart from "../components/icons/Heart";
 import Bloom from "../components/icons/Bloom";
 import PadLock from "../components/icons/PadLock";
-import MigrationNote from '../components/MigrationNote';
 
 export default function Home({ services }) {
 
@@ -64,9 +63,6 @@ export default function Home({ services }) {
         </div>
       </div>
       {cta}
-      <div className="row">
-        <MigrationNote />
-      </div>
     </div>
   );
 }
