@@ -17,7 +17,7 @@ func FileExists(filename string) (bool, error) {
 }
 
 func CreateDirectory(directoryName string) error {
-	err := os.Mkdir(directoryName, 0700)
+	err := os.MkdirAll(directoryName, 0700)
 
 	if err == nil || os.IsExist(err) {
 		return nil
