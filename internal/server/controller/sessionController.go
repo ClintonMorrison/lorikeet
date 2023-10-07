@@ -60,7 +60,7 @@ func NewSessionController(
 	// DELETE /session
 	var delete MethodHandler = func(request ApiRequest) ApiResponse {
 		err := service.RevokeSession(request.Context.SessionToken, request.Context.Username, request.Context.Ip)
-		if err != nil {
+		if err != nil && err != errors.NOT_FOUND {
 			return responseForError(err)
 		}
 

@@ -118,7 +118,7 @@ func (st *Table) RevokeSession(token string, username string) error {
 	// Get session from map
 	session, exists := st.sessionByToken[token]
 	if !exists {
-		return errors.INVALID_CREDENTIALS
+		return errors.NOT_FOUND
 	}
 
 	// Make sure username matches
