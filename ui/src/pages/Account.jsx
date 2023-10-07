@@ -56,7 +56,8 @@ export default class Account extends React.Component {
       anyErrors = true;
     }
 
-    if (!this.props.services.authService.passwordMatchesSession(this.state.oldPassword)) {
+    const salt = this.props.services.documentService.salt;
+    if (!this.props.services.authService.passwordMatchesSession({ password: this.state.oldPassword, salt })) {
       this.setState({ oldPasswordError: 'Old password is incorrect' });
       anyErrors = true;
     }

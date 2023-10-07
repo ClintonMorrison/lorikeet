@@ -17,13 +17,15 @@ export default class AuthService {
   createDocument({ username, password, recaptchaResult }) {
     this.storageVersion = 2; // use new version for all new users
     this.clientEncryptVersion = 2;
-    this.authService.setCredentials({ username, password });
+    this.authService.setUsername({ username });
+
+    const headers = this.authService.getRegisterHeaders({ password })
 
     return this.apiService.post("document", {
       document: '',
       password: this.authService.getServerToken({ password }),
       recaptchaResult,
-    }, this.authService.getRegisterHeaders()).then(resp => {
+    }, headers).then(resp => {
       this.salt = _.get(resp, 'data.salt') || '';
       this.authService.setSalt({ password, salt: this.salt });
     });
@@ -37,7 +39,7 @@ export default class AuthService {
       this.salt = _.get(resp, 'data.salt') || '';
 
       const decryptedDocument = encryptedDocument ?
-        this.authService.decrypt({ text: encryptedDocument, version: this.clientEncryptVersion }) :
+        this.authService.decrypt({ text: encryptedDocument }) :
         JSON.stringify(defaultEmptyDocument);
 
       this.document = JSON.parse(decryptedDocument);
@@ -57,8 +59,8 @@ export default class AuthService {
     const salt = this.salt;
 
     const encryptedDocument = password ?
-      this.authService.encrypt({ text: unencryptedDocument, salt, password, version }) :
-      this.authService.encrypt({ text: unencryptedDocument, version });
+      this.authService.encrypt({ text: unencryptedDocument, salt, password }) :
+      this.authService.encrypt({ text: unencryptedDocument });
 
     return this.apiService.put("document", {
       document: encryptedDocument,
@@ -93,7 +95,6 @@ export default class AuthService {
     return this.loadDocument().then(({ document }) => {
       return this.updateDocument({ document, password });
     }).then((resp) => {
-      this.authService.setCredentials({ password });
       this.authService.setSalt({ password, salt: resp.data.salt })
     }).catch(e => {
       this.apiService.handleAuthError(e);

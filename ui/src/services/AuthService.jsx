@@ -8,13 +8,6 @@ class StorageHelper {
     sessionStorage.setItem('username', value);
   }
 
-  getClientTokenV1() {
-    return sessionStorage.getItem('token');
-  }
-  setClientTokenV1(value) {
-    return sessionStorage.setItem('token', value);
-  }
-
   getClientTokenV2() {
     return sessionStorage.getItem('tokenV2');
   }
@@ -29,25 +22,16 @@ export default class AuthService {
     this.storageHelper = new StorageHelper();
   }
 
-  passwordMatchesSession(password) {
+  passwordMatchesSession({ password, salt }) {
     const username = this.getUsername();
-    const generatedClientTokenV1 = this.getClientToken({ username, password });
+    const generatedClientTokenV2 = this.getClientToken({ username, password, salt });
 
-    return password && generatedClientTokenV1 === this.getClientToken({ version: 1 });
+    return password && generatedClientTokenV2 === this.getClientToken();
   }
 
-  setCredentials({ username, password }) {
+  setUsername({ username }) {
     if (username) {
       this.storageHelper.setUsername(_.trim(username));
-    }
-
-    if (password) {
-      const tokenV1 = this.getClientToken({
-        username: username || this.getUsername(),
-        password,
-        version: 1,
-      });
-      this.storageHelper.setClientTokenV1(tokenV1);
     }
   }
 
@@ -57,14 +41,13 @@ export default class AuthService {
         username: this.getUsername(),
         password,
         salt,
-        version: 2,
       });
       this.storageHelper.setClientTokenV2(tokenV2);
     }
   }
 
   sessionExists() {
-    return !!(this.getUsername() && this.getClientToken({ version: 1 }));
+    return !!(this.getUsername() && this.getClientToken());
   }
 
   getUsername() {
@@ -75,52 +58,35 @@ export default class AuthService {
     sessionStorage.clear();
   }
 
-  getClientToken({ username, password, version, salt }) {
-    if (version === 2) {
-      if (username && password && salt) {
-        return this.encryptionService.generateClientEncryptTokenV2({ username, password, salt });
-      }
-
-      return this.storageHelper.getClientTokenV2();
+  getClientToken({ username, password, salt } = {}) {
+    if (username && password && salt) {
+      return this.encryptionService.generateClientEncryptTokenV2({ username, password, salt });
     }
 
-    if (username && password) {
-      return this.encryptionService.generateClientEncryptTokenV1({ username, password })
-    }
-
-    return this.storageHelper.getClientTokenV1();
+    return this.storageHelper.getClientTokenV2();
   }
 
   getServerToken({ password } = {}) {
     const username = this.getUsername();
-    if (!username) {
+    if (!username || !password) {
       return null;
     }
 
-    if (password) {
-      return this.encryptionService.generateServerEncryptTokenV1({ username, password });
-    }
-
-    const token = this.getClientToken({ version: 1 });
-    if (!token) {
-      return null;
-    }
-
-    return this.encryptionService.generateServerEncryptTokenV1({ username, token });
+    return this.encryptionService.generateServerEncryptTokenV1({ username, password });
   }
 
-  encrypt({ text, password, salt, version }) {
+  encrypt({ text, password, salt }) {
     const username = this.getUsername();
 
     const secret = password ?
-      this.getClientToken({ username, password, version, salt }) :
-      this.getClientToken({ version });
+      this.getClientToken({ username, password, salt }) :
+      this.getClientToken();
 
     return this.encryptionService.encrypt({ text, secret });
   }
 
-  decrypt({ text, version }) {
-    const secret = this.getClientToken({ version });
+  decrypt({ text }) {
+    const secret = this.getClientToken();
     return this.encryptionService.decrypt({ text, secret });
   }
 
@@ -130,9 +96,9 @@ export default class AuthService {
     return { 'Authorization': `Basic ${encoded}` };
   }
 
-  getRegisterHeaders() {
+  getRegisterHeaders({ password }) {
     const username = this.getUsername();
-    const decryptToken = this.getServerToken();
+    const decryptToken = this.getServerToken({ password });
     const encoded = btoa(`${username}:${decryptToken}`);
     return { 'Authorization': `Basic ${encoded}` };
   }
