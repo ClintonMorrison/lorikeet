@@ -8,15 +8,11 @@ export default class AuthService {
   constructor({ apiService, authService }) {
     this.apiService = apiService;
     this.authService = authService;
-    this.storageVersion = 0;
-    this.clientEncryptVersion = 0;
     this.salt = null;
     this.document = null;
   }
 
   createDocument({ username, password, recaptchaResult }) {
-    this.storageVersion = 2; // use new version for all new users
-    this.clientEncryptVersion = 2;
     this.authService.setUsername({ username });
 
     const headers = this.authService.getRegisterHeaders({ password })
@@ -34,8 +30,6 @@ export default class AuthService {
   loadDocument() {
     return this.apiService.get("document", {}, this.authService.getAuthedHeaders()).then(resp => {
       const encryptedDocument = _.get(resp, "data.document") || '';
-      this.storageVersion = _.get(resp, 'data.storageVersion') || 1;
-      this.clientEncryptVersion = _.get(resp, 'data.clientEncryptVersion') || 1;
       this.salt = _.get(resp, 'data.salt') || '';
 
       const decryptedDocument = encryptedDocument ?
@@ -46,7 +40,6 @@ export default class AuthService {
       return {
         document: this.document,
         salt: this.salt,
-        version: this.clientEncryptVersion,
       };
     }).catch(e => {
       this.apiService.handleAuthError(e);
@@ -55,7 +48,6 @@ export default class AuthService {
 
   updateDocument({ document, password }) {
     const unencryptedDocument = JSON.stringify(document);
-    const version = this.clientEncryptVersion;
     const salt = this.salt;
 
     const encryptedDocument = password ?
@@ -65,7 +57,6 @@ export default class AuthService {
     return this.apiService.put("document", {
       document: encryptedDocument,
       password: password ? this.authService.getServerToken({ password }) : undefined,
-      clientEncryptVersion: version,
     }, this.authService.getAuthedHeaders());
   }
 

@@ -10,17 +10,14 @@ import (
 )
 
 type DocumentResponse struct {
-	Document             string `json:"document"`             // encrypted password data
-	Salt                 string `json:"salt"`                 // salt for client to use
-	StorageVersion       int    `json:"storageVersion"`       // specifies how data is stored server-side (1 = legacy, 2 = new)
-	ClientEncryptVersion int    `json:"clientEncryptVersion"` // specifies how client will encrypt/decrypt data
+	Document string `json:"document"` // encrypted password data
+	Salt     string `json:"salt"`     // salt for client to use
 }
 
 type DocumentRequest struct {
-	Password             string `json:"password,omitempty"`
-	Document             string `json:"document"`
-	RecaptchaResult      string `json:"recaptchaResult"`
-	ClientEncryptVersion int    `json:"clientEncryptVersion"`
+	Password        string `json:"password,omitempty"`
+	Document        string `json:"document"`
+	RecaptchaResult string `json:"recaptchaResult"`
 }
 
 func NewDocumentController(
@@ -154,9 +151,7 @@ func marshalResponse(response DocumentResponse) ([]byte, error) {
 
 func adaptDocumentToResponse(document service.Document) ([]byte, error) {
 	return marshalResponse(DocumentResponse{
-		Document:             string(document.Data),
-		Salt:                 string(document.Salt),
-		StorageVersion:       document.StorageVersion,
-		ClientEncryptVersion: document.ClientEncryptVersion,
+		Document: string(document.Data),
+		Salt:     string(document.Salt),
 	})
 }

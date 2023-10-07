@@ -8,10 +8,10 @@ class StorageHelper {
     sessionStorage.setItem('username', value);
   }
 
-  getClientTokenV2() {
+  getClientToken() {
     return sessionStorage.getItem('tokenV2');
   }
-  setClientTokenV2(value) {
+  setClientToken(value) {
     return sessionStorage.setItem('tokenV2', value);
   }
 }
@@ -24,9 +24,9 @@ export default class AuthService {
 
   passwordMatchesSession({ password, salt }) {
     const username = this.getUsername();
-    const generatedClientTokenV2 = this.getClientToken({ username, password, salt });
+    const generatedClientToken = this.getClientToken({ username, password, salt });
 
-    return password && generatedClientTokenV2 === this.getClientToken();
+    return password && generatedClientToken === this.getClientToken();
   }
 
   setUsername({ username }) {
@@ -37,12 +37,12 @@ export default class AuthService {
 
   setSalt({ password, salt }) {
     if (salt) {
-      const tokenV2 = this.getClientToken({
+      const token = this.getClientToken({
         username: this.getUsername(),
         password,
         salt,
       });
-      this.storageHelper.setClientTokenV2(tokenV2);
+      this.storageHelper.setClientToken(token);
     }
   }
 
@@ -60,10 +60,10 @@ export default class AuthService {
 
   getClientToken({ username, password, salt } = {}) {
     if (username && password && salt) {
-      return this.encryptionService.generateClientEncryptTokenV2({ username, password, salt });
+      return this.encryptionService.generateClientEncryptToken({ username, password, salt });
     }
 
-    return this.storageHelper.getClientTokenV2();
+    return this.storageHelper.getClientToken();
   }
 
   getServerToken({ password } = {}) {
@@ -72,7 +72,7 @@ export default class AuthService {
       return null;
     }
 
-    return this.encryptionService.generateServerEncryptTokenV1({ username, password });
+    return this.encryptionService.generateServerEncryptToken({ username, password });
   }
 
   encrypt({ text, password, salt }) {

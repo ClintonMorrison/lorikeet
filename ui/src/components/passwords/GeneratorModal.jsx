@@ -14,7 +14,7 @@ export default class Modal extends React.Component {
 
   componentDidMount() {
     window.M.Modal.init(document.querySelectorAll('.modal'), {
-      onOpenEnd: () => {}
+      onOpenEnd: () => { }
     });
     window.M.Range.init(document.querySelectorAll("input[type=range]"));
   }
@@ -51,7 +51,7 @@ export default class Modal extends React.Component {
         <a href="#generate-modal"
           className="waves-effect waves-light btn modal-trigger">
           <i className="material-icons left">loop</i>
-        Generate
+          Generate
         </a>
 
         <div id="generate-modal" className="modal">
@@ -60,7 +60,7 @@ export default class Modal extends React.Component {
             <div>
               <p className="range-field">
                 <label htmlFor="password-length">Password Length ({this.state.passwordLength})</label>
-                <input 
+                <input
                   type="range"
                   id="password-length"
                   min="6"
@@ -86,9 +86,9 @@ export default class Modal extends React.Component {
 
               <p>
                 <label htmlFor="include-symbols">
-                  <input 
-                    id="include-symbols" 
-                    type="checkbox" 
+                  <input
+                    id="include-symbols"
+                    type="checkbox"
                     className="filled-in"
                     checked={this.state.includeSymbols}
                     onChange={(e) => this.setState({ includeSymbols: e.target.checked })}
