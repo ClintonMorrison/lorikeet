@@ -4,6 +4,6 @@ import ImageIcon from './ImageIcon';
 
 export default function Heart() {
   return (
-    <ImageIcon src="/lorikeetheart2.png" />
+    <ImageIcon small src="/heart.png" />
   );
 }

@@ -3,6 +3,6 @@ import ImageIcon from './ImageIcon';
 
 export default function PadLock() {
       return (
-            <ImageIcon src="/lorikeetlock.png" />
+            <ImageIcon small src="/lock.png" />
       )
 }
