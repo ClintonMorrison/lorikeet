@@ -17,7 +17,8 @@ func ParseCookies(request *http.Request) map[string]string {
 	items := strings.Split(request.Header.Get("Cookie"), ";")
 
 	for _, item := range items {
-		parts := strings.SplitN(item, "=", 2)
+		trimmedItem := strings.TrimSpace(item)
+		parts := strings.SplitN(trimmedItem, "=", 2)
 		if len(parts) != 2 {
 			continue
 		}

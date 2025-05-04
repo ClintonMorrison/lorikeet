@@ -1,6 +1,6 @@
 # Lorikeet
 
-Website: [https://lorikeet.ca](https://lorikeet.ca)
+Website: [https://lorikeet.clintonmorrison.com/](https://lorikeet.clintonmorrison.com/)
 
 Lorikeet is a password manager web app, created with Golang, React and Materialize CSS. It uses client-side and server-side AES encryption.
 
@@ -72,7 +72,7 @@ The built frontend app and API can be served with NGINX.
 ```
 http {
   server {
-    server_name  lorikeet.ca;
+    server_name  lorikeet.clintonmorrison.com;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
     location ~ ^/api/ {
