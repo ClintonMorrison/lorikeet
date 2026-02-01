@@ -9,7 +9,7 @@ const specialChars = [
 ];
 
 export function isLocalDev() {
-  return window.location.host === 'dev.lorikeet.ca'; // skip some validation for local dev
+  return window.location.host === 'localhost:3000'; // skip some validation for local dev
 }
 
 

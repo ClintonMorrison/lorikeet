@@ -12,6 +12,7 @@ import SessionService from "./services/SessionService";
 import './App.scss';
 import PreferencesService from './services/PreferencesService';
 import EncryptionService from './services/EncryptionService';
+import { isLocalDev } from './utils/validation';
 
 const helmetContext = {}
 
@@ -20,9 +21,10 @@ const encryptionService = new EncryptionService();
 
 const authService = new AuthService({ encryptionService });
 
+const baseURL = isLocalDev() ? 'http://localhost:8080/api/' : `${window.location.origin}/api/`;
 const apiService = new APIService({
   authService,
-  baseURL: `${window.location.origin}/api/`
+  baseURL
 });
 
 

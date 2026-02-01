@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isLocalDev } from '../utils/validation';
 
 export default class APIService {
   constructor({ baseURL, authService }) {
@@ -6,6 +7,11 @@ export default class APIService {
 
     axios.defaults.baseURL = baseURL;
     axios.defaults.headers.common['Accept'] = 'application/json';
+    
+    // Enable sending cookies with cross-origin requests only in local dev
+    if (isLocalDev()) {
+      axios.defaults.withCredentials = true;
+    }
   }
 
   handleAuthError(error) {

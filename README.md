@@ -15,14 +15,13 @@ Lorikeet is a password manager web app, created with Golang, React and Materiali
 
 The server runs on port 8080.
 ```
-cd ./lorikeet/
 go run cmd/server/main.go
 ```
 
 ### Running webpack
 For frontend development:
 ```
-cd ./lorikeet/ui
+cd ui
 npm i
 npm run start
 ```

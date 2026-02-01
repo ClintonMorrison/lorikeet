@@ -17,6 +17,26 @@ import (
 const documentApiPath = "/api/document"
 const sessionApiPath = "/api/session"
 
+// corsMiddleware wraps an http.HandlerFunc and adds CORS headers for local development
+func corsMiddleware(handler http.HandlerFunc, localDev bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if localDev {
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			// Handle preflight OPTIONS requests
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+
+		handler(w, r)
+	}
+}
+
 func Run(
 	dataPath string,
 	address string,
@@ -79,10 +99,14 @@ func Run(
 	repository.InitialSetup()
 
 	documentController := controller.NewDocumentController(cookieHelper, documentService, lockoutTable, requestLogger)
-	http.HandleFunc(documentApiPath, documentController.Handle)
+	http.HandleFunc(documentApiPath, corsMiddleware(documentController.Handle, localDev))
 
 	sessionController := controller.NewSessionController(cookieHelper, sessionService, lockoutTable, requestLogger)
-	http.HandleFunc(sessionApiPath, sessionController.Handle)
+	http.HandleFunc(sessionApiPath, corsMiddleware(sessionController.Handle, localDev))
+
+	if localDev {
+		debugLogger.Println("CORS enabled for http://localhost:3000")
+	}
 
 	fmt.Printf("Listening on http://localhost%s\n", address)
 	err = http.ListenAndServe(address, nil)
