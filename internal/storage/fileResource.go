@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -20,11 +19,11 @@ func (fr *FileResource) Exists() (bool, error) {
 }
 
 func (fr *FileResource) Write(data []byte) error {
-	return ioutil.WriteFile(fr.fileName, data, 0644)
+	return os.WriteFile(fr.fileName, data, 0644)
 }
 
 func (fr *FileResource) Read() ([]byte, error) {
-	return ioutil.ReadFile(fr.fileName)
+	return os.ReadFile(fr.fileName)
 }
 
 func (fr *FileResource) Remove() error {

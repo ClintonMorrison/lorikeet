@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -55,7 +55,7 @@ func (c *RestController) runMethodHandler(
 		return badRequestResponse
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return badRequestResponse
 	}

@@ -2,7 +2,7 @@ package recaptcha
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -40,7 +40,7 @@ func (rc *Client) Verify(recaptchaResponse string, ip string) bool {
 		return false
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		rc.debugLogger.Println("error reading recaptcha body: " + err.Error())
 		return false

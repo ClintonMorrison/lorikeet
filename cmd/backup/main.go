@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/ClintonMorrison/lorikeet/internal/storage"
-	"time"
 	"fmt"
 	"os"
+	"time"
+
 	"github.com/ClintonMorrison/lorikeet/internal/config"
+	"github.com/ClintonMorrison/lorikeet/internal/storage"
 )
 
 func main() {
