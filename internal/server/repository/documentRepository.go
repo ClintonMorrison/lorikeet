@@ -72,7 +72,10 @@ func (r *DocumentRepository) Get(auth model.Auth, salt []byte) ([]byte, error) {
 		return data, err
 	}
 
-	decrypted := utils.Decrypt(data, []byte(saltedPassword))
+	decrypted, err := utils.Decrypt(data, []byte(saltedPassword))
+	if err != nil {
+		return data, err
+	}
 
 	return decrypted, nil
 }

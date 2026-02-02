@@ -46,6 +46,9 @@ type ErrorBody struct {
 var emptyBody = make([]byte, 0)
 var emptyHeaders = make([]ResponseHeader, 0)
 
+// Maximum request body size (10 MB)
+const maxBodySize = 10 * 1024 * 1024
+
 func (c *RestController) runMethodHandler(
 	w http.ResponseWriter,
 	r *http.Request, context model.RequestContext,
@@ -55,6 +58,7 @@ func (c *RestController) runMethodHandler(
 		return badRequestResponse
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return badRequestResponse

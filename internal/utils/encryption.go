@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"io"
 )
 
@@ -29,39 +30,43 @@ func Hash(data []byte) string {
 func Encrypt(data []byte, hashedPassword []byte) ([]byte, error) {
 	block, err := aes.NewCipher(hashedPassword[:32])
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return make([]byte, 0), err
+		return nil, err
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	ciphertext := gcm.Seal(nonce, nonce, data, nil)
 	return ciphertext, nil
 }
 
-func Decrypt(data []byte, hashedPassword []byte) []byte {
-	key := []byte(hashedPassword)[:32]
+func Decrypt(data []byte, hashedPassword []byte) ([]byte, error) {
+	if len(hashedPassword) < 32 {
+		return nil, errors.New("password hash too short")
+	}
+
+	key := hashedPassword[:32]
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	nonceSize := gcm.NonceSize()
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	return plaintext
+	return plaintext, nil
 }
 
 func EncodeAsBase64(bytes []byte) string {
