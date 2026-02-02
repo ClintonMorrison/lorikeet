@@ -24,7 +24,7 @@ function _downloadBlob(data, type, filename) {
 
 function _formatVaueCSV(val) {
   if (val.includes(",")) {
-    return `"${val.replace(/\"/g, '""') || ''}"`;
+    return `"${val.replace(/"/g, '""') || ''}"`;   
   }
 
   return val;

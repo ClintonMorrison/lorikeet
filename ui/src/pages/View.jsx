@@ -1,13 +1,14 @@
 import React from 'react';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Helmet } from "react-helmet-async";
 import _ from 'lodash';
 
 import Details from "../components/passwords/Details";
 import Loader from "../components/Loader";
-import moment from "moment/moment";
+import dayjs from 'dayjs';
+import { withRouter } from '../utils/withRouter';
 
-export default class View extends React.Component {
+class View extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -17,18 +18,18 @@ export default class View extends React.Component {
 
   updatePassword(item) {
     const { id } = item;
-    item.updated = moment().toISOString();
-    item.lastUsed = moment().toISOString();
+    item.updated = dayjs().toISOString();
+    item.lastUsed = dayjs().toISOString();
 
     this.props.services.documentService.loadDocument().then(({ document }) => {
       const indexToUpdate = _.findIndex(document.passwords, { id });
       document.passwords[indexToUpdate] = item;
       return this.props.services.documentService.updateDocument({ document });
     }).then(() => {
-      this.props.history.push("/passwords");
+      this.props.navigate("/passwords");
     }).catch((err) => {
       console.log('error', err);
-      this.props.history.push("/logout");
+      this.props.navigate("/logout");
     });
   }
 
@@ -39,10 +40,10 @@ export default class View extends React.Component {
       document.passwords.splice(indexToDelete, 1);
       this.props.services.documentService.updateDocument({ document });
     }).then(() => {
-      this.props.history.push("/passwords");
+      this.props.navigate("/passwords");
     }).catch((err) => {
       console.log('error', err);
-      this.props.history.push("/logout");
+      this.props.navigate("/logout");
     });
   }
 
@@ -54,7 +55,7 @@ export default class View extends React.Component {
     return this.props.services.documentService.loadDocument().then(({ document }) => {
       this.setState({ document });
     }).catch(() => {
-      this.props.history.push("/logout");
+      this.props.navigate("/logout");
     });
   }
 
@@ -65,12 +66,12 @@ export default class View extends React.Component {
       );
     }
 
-    const { id } = this.props.match.params;
+    const { id } = this.props.params;
     const passwords = this.getPasswords();
     const item = _.find(passwords, { id });
 
     if (!item) {
-      return <Redirect to="/passwords" />;
+      return <Navigate to="/passwords" replace />;
     }
 
     return (
@@ -88,3 +89,5 @@ export default class View extends React.Component {
     );
   }
 }
+
+export default withRouter(View);

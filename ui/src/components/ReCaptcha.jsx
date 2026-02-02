@@ -1,14 +1,14 @@
-import { createRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 const SITE_KEY = '6LdmALIiAAAAAK-Kgn9zd7ohPIUmC3K0QZfOI_e5';
 
 // See https://www.npmjs.com/package/react-google-recaptcha
 export default function ReCaptcha({ onChange, reset, darkMode }) {
-  const recaptchaRef = createRef();
+  const recaptchaRef = useRef();
 
   useEffect(() => {
-    if (reset) {
+    if (reset && recaptchaRef.current) {
       recaptchaRef.current.reset();
     }
   }, [reset]);

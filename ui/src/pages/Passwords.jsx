@@ -1,6 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { v4 as uuid } from "uuid";
 import { Helmet } from "react-helmet-async";
 
@@ -9,10 +9,11 @@ import Loader from "../components/Loader";
 import TextField from "../components/forms/TextField";
 import Sort from "../components/passwords/Sort";
 import EmptyState from '../components/EmptyState';
+import { withRouter } from '../utils/withRouter';
 
 import './Passwords.scss';
 
-export default class Passwords extends React.Component {
+class Passwords extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -43,7 +44,7 @@ export default class Passwords extends React.Component {
     const { documentService } = this.props.services;
     documentService.loadDocument().then(({ document }) => {
       const indexToUpdate = _.findIndex(document.passwords, { id });
-      document.passwords[indexToUpdate].lastUsed = moment().toISOString();
+      document.passwords[indexToUpdate].lastUsed = dayjs().toISOString();
       documentService.updateDocument({ document });
     });
   }
@@ -69,22 +70,22 @@ export default class Passwords extends React.Component {
     if (sort === 'title') {
       return [
         p => p.title.trim().toLowerCase(),
-        p => moment(p.created).toISOString()
+        p => dayjs(p.created).toISOString()
       ];
     } else if (sort === 'last_used') {
       return [
-        p => moment(p.lastUsed).toISOString(),
-        p => moment(p.created).toISOString()
+        p => dayjs(p.lastUsed).toISOString(),
+        p => dayjs(p.created).toISOString()
       ];
     } else if (sort === 'updated') {
       return [
-        p => moment(p.updated).toISOString(),
-        p => moment(p.created).toISOString()
+        p => dayjs(p.updated).toISOString(),
+        p => dayjs(p.created).toISOString()
       ];
     } else if (sort === 'created') {
       return [
-        p => moment(p.created).toISOString(),
-        p => moment(p.updated).toISOString()
+        p => dayjs(p.created).toISOString(),
+        p => dayjs(p.updated).toISOString()
       ];
     }
 
@@ -102,10 +103,10 @@ export default class Passwords extends React.Component {
       document.passwords = [...document.passwords, password];
       return documentService.updateDocument({ document });
     }).then(() => {
-      this.props.history.push(`/passwords/${id}`);
+      this.props.navigate(`/passwords/${id}`);
     }).catch((err) => {
       console.log('error', err);
-      this.props.history.push("/logout");
+      this.props.navigate("/logout");
     });
   }
 
@@ -118,7 +119,7 @@ export default class Passwords extends React.Component {
     return this.props.services.documentService.loadDocument().then(({ document }) => {
       this.setState({ document });
     }).catch(() => {
-      this.props.history.push("/logout");
+      this.props.navigate("/logout");
     });
   }
 
@@ -218,3 +219,5 @@ export default class Passwords extends React.Component {
     )
   }
 }
+
+export default withRouter(Passwords);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { withRouter, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import './Navigation.scss';
 
@@ -48,9 +48,9 @@ export class Navigation extends React.Component {
             <Link to="/" className="brand-logo">
               Lorikeet
             </Link>
-            <a href="#" data-target="mobile-demo" className="sidenav-trigger right hide-on-med-and-up">
+            <button type="button" data-target="mobile-demo" className="sidenav-trigger right hide-on-med-and-up">
               <i className="material-icons">menu</i>
-            </a>
+            </button>
             <ul className="right hide-on-small-and-down">
               {items}
             </ul>
@@ -62,19 +62,7 @@ export class Navigation extends React.Component {
         </ul>
       </div>
     );
-
-
-    return (
-      <nav className="">
-        <div className="cp-navigation">
-          <Link to="/" className="brand-logo">Lorikeet</Link>
-          <ul id="nav-mobile" className="right">
-            {loggedIn ? loggedInItems : loggedOutItems}
-          </ul>
-        </div>
-      </nav>
-    );
   }
 }
 
-export default withRouter(Navigation);
+export default Navigation;

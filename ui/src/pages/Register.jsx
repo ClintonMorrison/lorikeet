@@ -8,8 +8,9 @@ import './Register.scss';
 import { isLocalDev, validatePassword } from "../utils/validation";
 import PasswordRequirements from "../components/PasswordRequirements";
 import ReCaptcha from '../components/ReCaptcha';
+import { withRouter } from '../utils/withRouter';
 
-export default class Register extends React.Component {
+class Register extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -66,7 +67,7 @@ export default class Register extends React.Component {
     const { username, password, recaptchaResult } = this.state;
     this.props.services.documentService.createDocument({ username, password, recaptchaResult })
       .then((resp) => {
-        this.props.history.push('/passwords')
+        this.props.navigate('/passwords')
       })
       .catch(err => {
         console.log({ ...err });
@@ -175,3 +176,5 @@ export default class Register extends React.Component {
 
   }
 }
+
+export default withRouter(Register);

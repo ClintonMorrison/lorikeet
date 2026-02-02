@@ -5,8 +5,9 @@ import { Helmet } from "react-helmet-async";
 import TextField from '../components/forms/TextField';
 import ReCaptcha from '../components/ReCaptcha';
 import { isLocalDev } from '../utils/validation';
+import { withRouter } from '../utils/withRouter';
 
-export default class Login extends React.Component {
+class Login extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -53,7 +54,7 @@ export default class Login extends React.Component {
         return this.props.services.documentService.loadDocument({ password });
       })
       .then(({ document }) => {
-        this.props.history.push('/passwords');
+        this.props.navigate('/passwords');
       })
       .catch(err => {
         this.resetRecaptcha();
@@ -152,3 +153,5 @@ export default class Login extends React.Component {
 
   }
 }
+
+export default withRouter(Login);

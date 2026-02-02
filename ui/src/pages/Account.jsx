@@ -7,8 +7,9 @@ import PasswordRequirements from '../components/PasswordRequirements';
 
 import './Account.scss';
 import { validatePassword } from "../utils/validation";
+import { withRouter } from '../utils/withRouter';
 
-export default class Account extends React.Component {
+class Account extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -67,7 +68,7 @@ export default class Account extends React.Component {
     }
 
     this.props.services.documentService.updatePassword(this.state.newPassword).then(() => {
-      setTimeout(() => this.props.history.push('/passwords'), 100);
+      setTimeout(() => this.props.navigate('/passwords'), 100);
     }).catch(err => {
       const newPasswordError = _.get(err, 'response.data.error', 'An error occurred.');
       this.setState({ newPasswordError });
@@ -80,7 +81,7 @@ export default class Account extends React.Component {
     const confirmed = window.confirm("Are you sure you want to delete your account? All your password data will be permanently deleted.");
     if (confirmed) {
       this.props.services.documentService.deleteDocument().then(() => {
-        this.props.history.push('/logout');
+        this.props.navigate('/logout');
       }).catch(err => {
         const errorMessage = _.get(err, 'response.data.error', 'An error occurred.');
         alert(errorMessage);
@@ -268,3 +269,5 @@ export default class Account extends React.Component {
 
   }
 }
+
+export default withRouter(Account);

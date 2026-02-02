@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { downloadAsJSON, downloadAsCSV, downloadAsText } from "../utils/download";
-import moment from "moment/moment";
+import dayjs from 'dayjs';
 
 const defaultEmptyDocument = { passwords: [] };
 
@@ -76,9 +76,9 @@ export default class AuthService {
       email: '',
       website: '',
       notes: '',
-      created: moment().toISOString(),
-      updated: moment().toISOString(),
-      lastUsed: moment().toISOString()
+      created: dayjs().toISOString(),
+      updated: dayjs().toISOString(),
+      lastUsed: dayjs().toISOString()
     };
   }
 
